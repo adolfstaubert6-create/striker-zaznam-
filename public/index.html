@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>STRIKER – Denný Záznam</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap');
+    :root{--bg:#0a0a0a;--surface:#111111;--border:#222222;--accent:#e8ff00;--accent2:#ff4500;--text:#f0f0f0;--muted:#666666}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;min-height:100vh;padding:24px 16px}
+    header{display:flex;align-items:center;gap:12px;margin-bottom:32px}
+    .logo{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:22px;color:var(--accent);letter-spacing:-1px}
+    .logo span{color:var(--muted);font-weight:400}
+    h2{font-size:13px;font-weight:400;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px}
+    textarea{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:15px;line-height:1.6;padding:16px;border-radius:6px;resize:vertical;min-height:160px;outline:none;transition:border-color 0.2s}
+    textarea:focus{border-color:var(--accent)}
+    textarea::placeholder{color:var(--muted)}
+    button{margin-top:16px;width:100%;background:var(--accent);color:#000;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;letter-spacing:1px;border:none;padding:16px;border-radius:6px;cursor:pointer;text-transform:uppercase}
+    button:disabled{opacity:0.4;cursor:not-allowed}
+    #status{margin-top:12px;font-size:13px;font-family:'IBM Plex Mono',monospace;color:var(--muted);min-height:20px}
+    #status.error{color:var(--accent2)}
+    #status.ok{color:var(--accent)}
+    #result{margin-top:24px;display:none}
+    .result-grid{display:flex;flex-direction:column;gap:12px}
+    .field{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px 16px}
+    .field-label{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px}
+    .field-value{font-size:14px;line-height:1.6;color:var(--text)}
+    .field-value.empty{color:var(--muted);font-style:italic}
+    .tag-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+    .tag{background:#1a1a1a;border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-size:13px;font-family:'IBM Plex Mono',monospace}
+  </style>
+</head>
+<body>
+<header><div class="logo">STRIKER<span>/zaznam</span></div></header>
+<h2>Vložiť text záznamu</h2>
+<textarea id="inputText" placeholder="Vlož text z WhatsApp / hovoru..."></textarea>
+<button id="btn" onclick="spracovat()">⚡ Spracovať záznam</button>
+<div id="status"></div>
+<div id="result"><div class="result-grid" id="resultGrid"></div></div>
+<script>
+async function spracovat(){
+  const text=document.getElementById('inputText').value.trim();
+  if(!text){setStatus('Vlož text.','error');return}
+  const btn=document.getElementById('btn');
+  btn.disabled=true;setStatus('Spracúvam...','');
+  try{
+    const res=await fetch('/.netlify/functions/process',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.error||'Chyba servera');
+    zobrazVysledok(data);setStatus('✓ Uložené do databázy','ok');
+  }catch(e){setStatus('✗ '+e.message,'error')}
+  finally{btn.disabled=false}
+}
+function setStatus(msg,type){const el=document.getElementById('status');el.textContent=msg;el.className=type}
+function zobrazVysledok(d){
+  const grid=document.getElementById('resultGrid');grid.innerHTML='';
+  [{key:'datum',label:'Dátum'},{key:'co_sa_riesilo',label:'Čo sa riešilo'},{key:'vysledok',label:'Výsledok'},{key:'problem',label:'Problém'},{key:'ulohy_staubert',label:'Úlohy – Staubert',isArray:true},{key:'ulohy_szabo',label:'Úlohy – Szabó',isArray:true},{key:'dalsi_krok',label:'Ďalší krok'}].forEach(f=>{
+    const val=d[f.key],div=document.createElement('div');div.className='field';
+    const label=document.createElement('div');label.className='field-label';label.textContent=f.label;
+    const valueDiv=document.createElement('div');valueDiv.className='field-value';
+    if(f.isArray&&Array.isArray(val)&&val.length>0){const tl=document.createElement('div');tl.className='tag-list';val.forEach(item=>{const t=document.createElement('span');t.className='tag';t.textContent=item;tl.appendChild(t)});valueDiv.appendChild(tl)}
+    else if(val&&val!==''){valueDiv.textContent=val}
+    else{valueDiv.textContent='—';valueDiv.classList.add('empty')}
+    div.appendChild(label);div.appendChild(valueDiv);grid.appendChild(div);
+  });
+  document.getElementById('result').style.display='block';
+}
+</script>
+</body>
+</html>
