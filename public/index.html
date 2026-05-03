@@ -6,18 +6,21 @@
   <title>STRIKER – Denný Záznam</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap');
-    :root{--bg:#0a0a0a;--surface:#111111;--border:#222222;--accent:#e8ff00;--accent2:#ff4500;--text:#f0f0f0;--muted:#666666}
+    :root{--bg:#0a0a0a;--surface:#111111;--border:#222222;--accent:#e8ff00;--accent2:#ff4500;--text:#f0f0f0;--muted:#666666;--danger:#ff4500}
     *{box-sizing:border-box;margin:0;padding:0}
     body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;min-height:100vh;padding:24px 16px}
-    header{display:flex;align-items:center;gap:12px;margin-bottom:32px}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
     .logo{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:22px;color:var(--accent);letter-spacing:-1px}
     .logo span{color:var(--muted);font-weight:400}
+    .tabs{display:flex;gap:8px;margin-bottom:24px}
+    .tab{padding:10px 20px;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:13px;background:transparent;color:var(--muted);transition:all 0.2s}
+    .tab.active{background:var(--accent);color:#000;border-color:var(--accent)}
     h2{font-size:13px;font-weight:400;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px}
     textarea{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:15px;line-height:1.6;padding:16px;border-radius:6px;resize:vertical;min-height:160px;outline:none;transition:border-color 0.2s}
     textarea:focus{border-color:var(--accent)}
     textarea::placeholder{color:var(--muted)}
-    button{margin-top:16px;width:100%;background:var(--accent);color:#000;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;letter-spacing:1px;border:none;padding:16px;border-radius:6px;cursor:pointer;text-transform:uppercase}
-    button:disabled{opacity:0.4;cursor:not-allowed}
+    .btn-primary{margin-top:16px;width:100%;background:var(--accent);color:#000;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;letter-spacing:1px;border:none;padding:16px;border-radius:6px;cursor:pointer;text-transform:uppercase}
+    .btn-primary:disabled{opacity:0.4;cursor:not-allowed}
     #status{margin-top:12px;font-size:13px;font-family:'IBM Plex Mono',monospace;color:var(--muted);min-height:20px}
     #status.error{color:var(--accent2)}
     #status.ok{color:var(--accent)}
@@ -29,19 +32,88 @@
     .field-value.empty{color:var(--muted);font-style:italic}
     .tag-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
     .tag{background:#1a1a1a;border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-size:13px;font-family:'IBM Plex Mono',monospace}
+    #historyPanel{display:none}
+    .history-toolbar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+    .btn-sm{padding:8px 14px;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text);transition:all 0.2s}
+    .btn-sm:hover{border-color:var(--accent)}
+    .btn-danger{background:var(--danger);color:#fff;border-color:var(--danger)}
+    .btn-danger:disabled{opacity:0.3;cursor:not-allowed}
+    .selected-count{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);margin-left:auto}
+    .zaznam-item{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px 16px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start;transition:border-color 0.2s;cursor:pointer;user-select:none}
+    .zaznam-item.selected{border-color:var(--accent)}
+    .zaznam-check{width:18px;height:18px;border:2px solid var(--border);border-radius:4px;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;transition:all 0.2s}
+    .zaznam-item.selected .zaznam-check{background:var(--accent);border-color:var(--accent)}
+    .zaznam-check::after{content:'✓';font-size:11px;color:#000;display:none}
+    .zaznam-item.selected .zaznam-check::after{display:block}
+    .zaznam-body{flex:1}
+    .zaznam-date{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);margin-bottom:4px}
+    .zaznam-title{font-size:14px;color:var(--text);margin-bottom:4px}
+    .zaznam-sub{font-size:12px;color:var(--muted)}
+    .zaznam-delete{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:4px;border-radius:4px;transition:color 0.2s;flex-shrink:0}
+    .zaznam-delete:hover{color:var(--danger)}
+    .no-records{text-align:center;padding:40px;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:13px}
+    .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;border:1px solid var(--accent);color:var(--text);padding:12px 20px;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:13px;display:flex;gap:12px;align-items:center;z-index:999;opacity:0;transition:opacity 0.3s;pointer-events:none}
+    .toast.show{opacity:1;pointer-events:auto}
+    .toast-undo{background:none;border:none;color:var(--accent);cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:13px;text-decoration:underline}
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;display:none;align-items:center;justify-content:center;padding:20px}
+    .modal-overlay.show{display:flex}
+    .modal{background:#1a1a1a;border:1px solid var(--border);border-radius:8px;padding:24px;max-width:400px;width:100%}
+    .modal h3{font-family:'IBM Plex Mono',monospace;font-size:16px;margin-bottom:12px}
+    .modal p{font-size:14px;color:var(--muted);margin-bottom:20px;line-height:1.5}
+    .modal-btns{display:flex;gap:8px;justify-content:flex-end}
+    .btn-cancel{padding:10px 20px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text);cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:13px}
+    .btn-confirm-delete{padding:10px 20px;border:none;border-radius:6px;background:var(--danger);color:#fff;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:13px}
   </style>
 </head>
 <body>
 <header><div class="logo">STRIKER<span>/zaznam</span></div></header>
-<h2>Vložiť text záznamu</h2>
-<textarea id="inputText" placeholder="Vlož text z WhatsApp / hovoru..."></textarea>
-<button id="btn" onclick="spracovat()">⚡ Spracovať záznam</button>
-<div id="status"></div>
-<div id="result"><div class="result-grid" id="resultGrid"></div></div>
+<div class="tabs">
+  <button class="tab active" onclick="showTab('new',this)">⚡ Nový záznam</button>
+  <button class="tab" onclick="showTab('history',this)">📋 História</button>
+</div>
+<div id="newPanel">
+  <h2>Vložiť text záznamu</h2>
+  <textarea id="inputText" placeholder="Vlož text z WhatsApp / hovoru..."></textarea>
+  <button class="btn-primary" id="btn" onclick="spracovat()">⚡ Spracovať záznam</button>
+  <div id="status"></div>
+  <div id="result"><div class="result-grid" id="resultGrid"></div></div>
+</div>
+<div id="historyPanel">
+  <div class="history-toolbar">
+    <button class="btn-sm" onclick="toggleSelectAll()" id="btnSelectAll">Označiť všetko</button>
+    <button class="btn-sm btn-danger" id="btnDeleteSelected" onclick="deleteSelected()" disabled>🗑 Vymazať označené (0)</button>
+    <span class="selected-count" id="selectedCount"></span>
+  </div>
+  <div id="recordsList"></div>
+</div>
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3>Potvrdiť vymazanie</h3>
+    <p id="modalText"></p>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Zrušiť</button>
+      <button class="btn-confirm-delete" onclick="confirmDelete()">Vymazať</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast">
+  <span id="toastText"></span>
+  <button class="toast-undo" onclick="undoDelete()">Obnoviť</button>
+</div>
 <script>
+const SUPABASE_URL='https://jjvegnwqipmcipwvdjje.supabase.co';
+const SUPABASE_KEY='sb_publishable_394--dKKaFRvFmwloXC1bw_Wj7KWv42';
+let allRecords=[],selectedIds=new Set(),pendingDelete=[],toastTimer=null,deleteCallback=null;
+function showTab(tab,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('newPanel').style.display=tab==='new'?'block':'none';
+  document.getElementById('historyPanel').style.display=tab==='history'?'block':'none';
+  if(tab==='history')loadHistory();
+}
 async function spracovat(){
   const text=document.getElementById('inputText').value.trim();
-  if(!text){setStatus('Vlož text.','error');return}
+  if(!text){setStatus('Vlož text.','error');return;}
   const btn=document.getElementById('btn');
   btn.disabled=true;setStatus('Spracúvam...','');
   try{
@@ -49,23 +121,80 @@ async function spracovat(){
     const data=await res.json();
     if(!res.ok)throw new Error(data.error||'Chyba servera');
     zobrazVysledok(data);setStatus('✓ Uložené do databázy','ok');
-  }catch(e){setStatus('✗ '+e.message,'error')}
-  finally{btn.disabled=false}
+  }catch(e){setStatus('✗ '+e.message,'error');}
+  finally{btn.disabled=false;}
 }
-function setStatus(msg,type){const el=document.getElementById('status');el.textContent=msg;el.className=type}
+function setStatus(msg,type){const el=document.getElementById('status');el.textContent=msg;el.className=type;}
 function zobrazVysledok(d){
   const grid=document.getElementById('resultGrid');grid.innerHTML='';
   [{key:'datum',label:'Dátum'},{key:'co_sa_riesilo',label:'Čo sa riešilo'},{key:'vysledok',label:'Výsledok'},{key:'problem',label:'Problém'},{key:'ulohy_staubert',label:'Úlohy – Staubert',isArray:true},{key:'ulohy_szabo',label:'Úlohy – Szabó',isArray:true},{key:'dalsi_krok',label:'Ďalší krok'}].forEach(f=>{
     const val=d[f.key],div=document.createElement('div');div.className='field';
     const label=document.createElement('div');label.className='field-label';label.textContent=f.label;
     const valueDiv=document.createElement('div');valueDiv.className='field-value';
-    if(f.isArray&&Array.isArray(val)&&val.length>0){const tl=document.createElement('div');tl.className='tag-list';val.forEach(item=>{const t=document.createElement('span');t.className='tag';t.textContent=item;tl.appendChild(t)});valueDiv.appendChild(tl)}
-    else if(val&&val!==''){valueDiv.textContent=val}
-    else{valueDiv.textContent='—';valueDiv.classList.add('empty')}
+    if(f.isArray&&Array.isArray(val)&&val.length>0){const tl=document.createElement('div');tl.className='tag-list';val.forEach(item=>{const t=document.createElement('span');t.className='tag';t.textContent=item;tl.appendChild(t);});valueDiv.appendChild(tl);}
+    else if(val&&val!==''){valueDiv.textContent=val;}
+    else{valueDiv.textContent='—';valueDiv.classList.add('empty');}
     div.appendChild(label);div.appendChild(valueDiv);grid.appendChild(div);
   });
   document.getElementById('result').style.display='block';
 }
+async function loadHistory(){
+  const list=document.getElementById('recordsList');
+  list.innerHTML='<div class="no-records">Načítavam...</div>';
+  selectedIds.clear();updateToolbar();
+  try{
+    const res=await fetch(`${SUPABASE_URL}/rest/v1/zaznam?select=*&order=created_at.desc`,{headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`}});
+    allRecords=await res.json();renderList();
+  }catch(e){list.innerHTML='<div class="no-records">Chyba načítania</div>';}
+}
+function renderList(){
+  const list=document.getElementById('recordsList');
+  if(!allRecords.length){list.innerHTML='<div class="no-records">Žiadne záznamy</div>';return;}
+  list.innerHTML='';
+  allRecords.forEach(r=>{
+    const item=document.createElement('div');
+    item.className='zaznam-item'+(selectedIds.has(r.id)?' selected':'');
+    item.innerHTML=`<div class="zaznam-check"></div><div class="zaznam-body"><div class="zaznam-date">${r.datum||'—'}</div><div class="zaznam-title">${r.co_sa_riesilo||'—'}</div><div class="zaznam-sub">${r.dalsi_krok||''}</div></div><button class="zaznam-delete" onclick="event.stopPropagation();deleteSingle(${r.id})">🗑</button>`;
+    item.addEventListener('click',()=>toggleSelect(r.id));
+    list.appendChild(item);
+  });
+}
+function toggleSelect(id){if(selectedIds.has(id))selectedIds.delete(id);else selectedIds.add(id);updateToolbar();renderList();}
+function toggleSelectAll(){if(selectedIds.size===allRecords.length)selectedIds.clear();else allRecords.forEach(r=>selectedIds.add(r.id));updateToolbar();renderList();}
+function updateToolbar(){
+  const n=selectedIds.size;
+  const btn=document.getElementById('btnDeleteSelected');
+  btn.textContent=`🗑 Vymazať označené (${n})`;btn.disabled=n===0;
+  document.getElementById('selectedCount').textContent=n>0?`${n} označených`:'';
+  document.getElementById('btnSelectAll').textContent=selectedIds.size===allRecords.length&&allRecords.length>0?'Zrušiť výber':'Označiť všetko';
+}
+function deleteSingle(id){showModal('Naozaj chceš vymazať tento záznam?',()=>executeDelete([id]));}
+function deleteSelected(){const ids=[...selectedIds];showModal(`Naozaj chceš vymazať ${ids.length} záznam${ids.length>1?'ov':''}?`,()=>executeDelete(ids));}
+function showModal(text,callback){document.getElementById('modalText').textContent=text;document.getElementById('modal').classList.add('show');deleteCallback=callback;}
+function closeModal(){document.getElementById('modal').classList.remove('show');deleteCallback=null;}
+function confirmDelete(){closeModal();if(deleteCallback)deleteCallback();}
+async function executeDelete(ids){
+  pendingDelete=allRecords.filter(r=>ids.includes(r.id));
+  allRecords=allRecords.filter(r=>!ids.includes(r.id));
+  ids.forEach(id=>selectedIds.delete(id));
+  updateToolbar();renderList();
+  try{
+    await fetch(`${SUPABASE_URL}/rest/v1/zaznam?id=in.(${ids.join(',')})`,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Prefer':'return=minimal'}});
+    showToast(`${ids.length} záznam${ids.length>1?'y':''} vymazaný`);
+  }catch(e){allRecords=[...allRecords,...pendingDelete];renderList();showToast('Chyba pri mazaní');}
+}
+function undoDelete(){
+  if(!pendingDelete.length)return;
+  allRecords=[...allRecords,...pendingDelete].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  pendingDelete=[];renderList();hideToast();
+}
+function showToast(text){
+  clearTimeout(toastTimer);
+  document.getElementById('toastText').textContent=text;
+  document.getElementById('toast').classList.add('show');
+  toastTimer=setTimeout(hideToast,5000);
+}
+function hideToast(){document.getElementById('toast').classList.remove('show');}
 </script>
 </body>
 </html>
