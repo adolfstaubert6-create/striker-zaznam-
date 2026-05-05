@@ -34,7 +34,11 @@
     .tag{background:#1a1a1a;border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-size:13px;font-family:'IBM Plex Mono',monospace}
     #historyPanel{display:none}
     #detailPanel{display:none}
-    .history-toolbar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+    .history-toolbar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+    .search-box{width:100%;margin-bottom:12px}
+    .search-box input{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:14px;padding:10px 14px;border-radius:6px;outline:none;transition:border-color 0.2s}
+    .search-box input:focus{border-color:var(--accent)}
+    .search-box input::placeholder{color:var(--muted)}
     .btn-sm{padding:8px 14px;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text);transition:all 0.2s}
     .btn-sm:hover{border-color:var(--accent)}
     .btn-danger{background:var(--danger);color:#fff;border-color:var(--danger)}
@@ -64,7 +68,10 @@
     .modal-btns{display:flex;gap:8px;justify-content:flex-end}
     .btn-cancel{padding:10px 20px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text);cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:13px}
     .btn-confirm-delete{padding:10px 20px;border:none;border-radius:6px;background:var(--danger);color:#fff;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:13px}
-    .back-btn{margin-bottom:16px}
+    .back-btn{margin-bottom:16px;display:flex;gap:8px;align-items:center}
+    .detail-header{background:var(--surface);border:1px solid var(--accent);border-radius:8px;padding:16px 20px;margin-bottom:16px}
+    .detail-date{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);margin-bottom:6px}
+    .detail-title{font-size:18px;font-weight:600;color:var(--text);line-height:1.4}
   </style>
 </head>
 <body>
@@ -81,6 +88,9 @@
   <div id="result"><div class="result-grid" id="resultGrid"></div></div>
 </div>
 <div id="historyPanel">
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="🔍 Hľadať v histórii..." oninput="renderList()"/>
+  </div>
   <div class="history-toolbar">
     <button class="btn-sm" onclick="toggleSelectAll()" id="btnSelectAll">Označiť všetko</button>
     <button class="btn-sm btn-danger" id="btnDeleteSelected" onclick="deleteSelected()" disabled>🗑 Vymazať označené (0)</button>
@@ -91,7 +101,9 @@
 <div id="detailPanel">
   <div class="back-btn">
     <button class="btn-sm" onclick="goBack()">⬅ Späť do Histórie</button>
+    <button class="btn-sm" onclick="copyDetail()">📋 Kopírovať záznam</button>
   </div>
+  <div class="detail-header" id="detailHeader"></div>
   <div class="result-grid" id="detailGrid"></div>
 </div>
 <div class="modal-overlay" id="modal">
@@ -111,7 +123,8 @@
 <script>
 const SUPABASE_URL='https://jjvegnwqipmcipwvdjje.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpqdmVnbndxaXBtY2lwd3ZkamplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTczMTYsImV4cCI6MjA5MzM5MzMxNn0.Jizw9XYzoGlo6teVuo6POx0zybcLjGNwrKGhtTmWXZo';
-let allRecords=[],selectedIds=new Set(),pendingDelete=[],toastTimer=null,deleteCallback=null;
+let allRecords=[],selectedIds=new Set(),pendingDelete=[],toastTimer=null,deleteCallback=null,currentDetail=null;
+
 function showTab(tab,el){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   if(el)el.classList.add('active');
@@ -120,13 +133,17 @@ function showTab(tab,el){
   document.getElementById('detailPanel').style.display='none';
   if(tab==='history')loadHistory();
 }
+
 function openDetail(record){
+  currentDetail=record;
   document.getElementById('newPanel').style.display='none';
   document.getElementById('historyPanel').style.display='none';
   document.getElementById('detailPanel').style.display='block';
+  const header=document.getElementById('detailHeader');
+  header.innerHTML=`<div class="detail-date">${record.datum||'—'}</div><div class="detail-title">${record.co_sa_riesilo||'—'}</div>`;
   const grid=document.getElementById('detailGrid');
   grid.innerHTML='';
-  [{key:'datum',label:'Dátum'},{key:'co_sa_riesilo',label:'Čo sa riešilo'},{key:'vysledok',label:'Výsledok'},{key:'problem',label:'Problém'},{key:'ulohy_staubert',label:'Úlohy – Staubert',isArray:true},{key:'ulohy_szabo',label:'Úlohy – Szabó',isArray:true},{key:'dalsi_krok',label:'Ďalší krok'}].forEach(f=>{
+  [{key:'vysledok',label:'Výsledok'},{key:'problem',label:'Problém'},{key:'ulohy_staubert',label:'Úlohy – Staubert',isArray:true},{key:'ulohy_szabo',label:'Úlohy – Szabó',isArray:true},{key:'dalsi_krok',label:'Ďalší krok'}].forEach(f=>{
     const val=record[f.key],div=document.createElement('div');div.className='field';
     const label=document.createElement('div');label.className='field-label';label.textContent=f.label;
     const valueDiv=document.createElement('div');valueDiv.className='field-value';
@@ -136,11 +153,28 @@ function openDetail(record){
     div.appendChild(label);div.appendChild(valueDiv);grid.appendChild(div);
   });
 }
+
+function copyDetail(){
+  if(!currentDetail)return;
+  const r=currentDetail;
+  const lines=[
+    `Dátum: ${r.datum||'—'}`,
+    `Čo sa riešilo: ${r.co_sa_riesilo||'—'}`,
+    `Výsledok: ${r.vysledok||'—'}`,
+    `Problém: ${r.problem||'—'}`,
+    `Úlohy Staubert: ${Array.isArray(r.ulohy_staubert)&&r.ulohy_staubert.length?r.ulohy_staubert.join(', '):'—'}`,
+    `Úlohy Szabó: ${Array.isArray(r.ulohy_szabo)&&r.ulohy_szabo.length?r.ulohy_szabo.join(', '):'—'}`,
+    `Ďalší krok: ${r.dalsi_krok||'—'}`
+  ];
+  navigator.clipboard.writeText(lines.join('\n')).then(()=>showToast('Záznam skopírovaný')).catch(()=>showToast('Kopírovanie zlyhalo'));
+}
+
 function goBack(){
   document.getElementById('detailPanel').style.display='none';
   document.getElementById('historyPanel').style.display='block';
   document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');if(i===1)t.classList.add('active');});
 }
+
 async function spracovat(){
   const text=document.getElementById('inputText').value.trim();
   if(!text){setStatus('Vlož text.','error');return;}
@@ -180,9 +214,13 @@ async function loadHistory(){
 }
 function renderList(){
   const list=document.getElementById('recordsList');
-  if(!allRecords.length){list.innerHTML='<div class="no-records">Žiadne záznamy</div>';return;}
+  const q=(document.getElementById('searchInput')?.value||'').toLowerCase().trim();
+  const filtered=q?allRecords.filter(r=>{
+    return [r.datum,r.co_sa_riesilo,r.vysledok,r.problem,r.dalsi_krok,...(r.ulohy_staubert||[]),...(r.ulohy_szabo||[])].some(v=>v&&v.toString().toLowerCase().includes(q));
+  }):allRecords;
+  if(!filtered.length){list.innerHTML='<div class="no-records">Žiadne záznamy</div>';return;}
   list.innerHTML='';
-  allRecords.forEach(r=>{
+  filtered.forEach(r=>{
     const item=document.createElement('div');
     item.className='zaznam-item'+(selectedIds.has(r.id)?' selected':'');
     item.innerHTML=`<div class="zaznam-check"></div><div class="zaznam-body"><div class="zaznam-date">${r.datum||'—'}</div><div class="zaznam-title">${r.co_sa_riesilo||'—'}</div><div class="zaznam-sub">${r.dalsi_krok||''}</div></div><button class="zaznam-delete" onclick="event.stopPropagation();deleteSingle(${r.id})">🗑</button>`;
