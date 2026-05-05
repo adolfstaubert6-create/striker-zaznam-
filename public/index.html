@@ -174,36 +174,15 @@ function showModal(text,callback){document.getElementById('modalText').textConte
 function closeModal(){document.getElementById('modal').classList.remove('show');deleteCallback=null;}
 function confirmDelete(){closeModal();if(deleteCallback)deleteCallback();}
 async function executeDelete(ids){
-  const numericIds = ids.map(Number).filter(Number.isFinite);
-  if(!numericIds.length){showToast('Žiadne platné ID');return;}
-  pendingDelete = allRecords.filter(r => numericIds.includes(Number(r.id)));
-  allRecords = allRecords.filter(r => !numericIds.includes(Number(r.id)));
-  numericIds.forEach(id => selectedIds.delete(id));
-  updateToolbar();
-  renderList();
-  const url = `${SUPABASE_URL}/rest/v1/zaznam?id=in.(${numericIds.join(',')})`;
-  console.log("DELETE IDS:", numericIds);
-  console.log("DELETE URL:", url);
+  pendingDelete=allRecords.filter(r=>ids.includes(r.id));
+  allRecords=allRecords.filter(r=>!ids.includes(r.id));
+  ids.forEach(id=>selectedIds.delete(id));
+  updateToolbar();renderList();
   try{
-    const res = await fetch(url, {
-      method: 'DELETE',
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Prefer': 'return=representation'
-      }
-    });
-    const text = await res.text();
-    console.log("DELETE STATUS:", res.status);
-    console.log("DELETE RESPONSE:", text);
-    if(!res.ok){throw new Error(`${res.status}: ${text}`);}
-    if(text === '[]'){throw new Error('DELETE prešiel ale nič nevymazal.');}
-    showToast(`${numericIds.length} záznam${numericIds.length>1?'y':''} vymazaný`);
-  }catch(e){
-    allRecords = [...allRecords, ...pendingDelete].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
-    renderList();
-    showToast('Chyba: ' + e.message);
-  }
+    const res=await fetch('/.netlify/functions/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids})});
+    if(!res.ok)throw new Error(await res.text());
+    showToast(`${ids.length} záznam${ids.length>1?'y':''} vymazaný`);
+  }catch(e){allRecords=[...allRecords,...pendingDelete];renderList();showToast('Chyba: '+e.message);}
 }
 function undoDelete(){
   if(!pendingDelete.length)return;
