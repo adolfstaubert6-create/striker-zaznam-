@@ -171,8 +171,8 @@ function updateToolbar(){
 function deleteSingle(id){showModal('Naozaj chceš vymazať tento záznam?',()=>executeDelete([id]));}
 function deleteSelected(){const ids=[...selectedIds];showModal(`Naozaj chceš vymazať ${ids.length} záznam${ids.length>1?'ov':''}?`,()=>executeDelete(ids));}
 function showModal(text,callback){document.getElementById('modalText').textContent=text;document.getElementById('modal').classList.add('show');deleteCallback=callback;}
-function closeModal(){document.getElementById('modal').classList.remove('show');deleteCallback=null;}
-function confirmDelete(){closeModal();if(deleteCallback)deleteCallback();}
+function closeModal(){document.getElementById('modal').classList.remove('show');}
+function confirmDelete(){const cb=deleteCallback;closeModal();deleteCallback=null;if(cb)cb();}
 async function executeDelete(ids){
   pendingDelete=allRecords.filter(r=>ids.includes(r.id));
   allRecords=allRecords.filter(r=>!ids.includes(r.id));
