@@ -150,6 +150,7 @@ async function spracovat(){
     const res=await fetch('/.netlify/functions/process',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
     const data=await res.json();
     if(!res.ok)throw new Error(data.error||'Chyba servera');
+    document.getElementById('inputText').value='';
     zobrazVysledok(data);setStatus('✓ Uložené do databázy','ok');
   }catch(e){setStatus('✗ '+e.message,'error');}
   finally{btn.disabled=false;}
