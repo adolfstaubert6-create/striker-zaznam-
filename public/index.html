@@ -155,11 +155,16 @@ function renderList(){
     const item=document.createElement('div');
     item.className='zaznam-item'+(selectedIds.has(r.id)?' selected':'');
     item.innerHTML=`<div class="zaznam-check"></div><div class="zaznam-body"><div class="zaznam-date">${r.datum||'—'}</div><div class="zaznam-title">${r.co_sa_riesilo||'—'}</div><div class="zaznam-sub">${r.dalsi_krok||''}</div></div><button class="zaznam-delete" onclick="event.stopPropagation();deleteSingle(${r.id})">🗑</button>`;
-    item.addEventListener('click',()=>toggleSelect(r.id));
+    item.addEventListener('click',()=>openRecord(r));
     list.appendChild(item);
   });
 }
-function toggleSelect(id){if(selectedIds.has(id))selectedIds.delete(id);else selectedIds.add(id);updateToolbar();renderList();}
+function openRecord(record){
+  zobrazVysledok(record);
+  document.getElementById('result').style.display='block';
+  showTab('new', document.querySelectorAll('.tab')[0]);
+}
+  function toggleSelect(id){if(selectedIds.has(id))selectedIds.delete(id);else selectedIds.add(id);updateToolbar();renderList();}
 function toggleSelectAll(){if(selectedIds.size===allRecords.length)selectedIds.clear();else allRecords.forEach(r=>selectedIds.add(r.id));updateToolbar();renderList();}
 function updateToolbar(){
   const n=selectedIds.size;
