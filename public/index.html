@@ -63,6 +63,7 @@
     .zaznam-date{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);margin-bottom:4px}
     .zaznam-title{font-size:14px;color:var(--text);margin-bottom:4px}
     .zaznam-sub{font-size:12px;color:var(--muted)}
+    .zaznam-ulozene{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-top:4px}
     .zaznam-delete{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:4px;border-radius:4px;transition:color 0.2s;flex-shrink:0}
     .zaznam-delete:hover{color:var(--danger)}
     .no-records{text-align:center;padding:40px;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:13px}
@@ -79,13 +80,13 @@
     .btn-confirm-delete{padding:10px 20px;border:none;border-radius:6px;background:var(--danger);color:#fff;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:13px}
     .detail-actions{display:flex;gap:8px;margin-bottom:16px}
     .detail-header{background:var(--surface);border:1px solid var(--accent);border-radius:8px;padding:16px 20px;margin-bottom:16px}
-    .detail-date{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);margin-bottom:6px}
+    .detail-date{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);margin-bottom:4px}
+    .detail-ulozene{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:6px}
     .detail-title{font-size:18px;font-weight:600;color:var(--text);line-height:1.4}
-    /* AI Report panel */
     .report-actions{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
-    .report-header{background:var(--surface);border:1px solid var(--accent);border-radius:8px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:10px}
-    .report-header-title{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--accent)}
-    .report-header-sub{font-size:12px;color:var(--muted);margin-left:auto}
+    .report-header{background:var(--surface);border:1px solid var(--accent);border-radius:8px;padding:14px 18px;margin-bottom:16px}
+    .report-header-title{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--accent);display:block;margin-bottom:4px}
+    .report-header-sub{font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace}
     .report-body{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px;line-height:1.8;font-size:14px;white-space:pre-wrap;color:var(--text)}
     .report-body h2{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);margin:16px 0 6px;letter-spacing:1px}
     .report-body h2:first-child{margin-top:0}
@@ -157,7 +158,7 @@
 <script>
 const SUPABASE_URL='https://jjvegnwqipmcipwvdjje.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpqdmVnbndxaXBtY2lwd3ZkamplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTczMTYsImV4cCI6MjA5MzM5MzMxNn0.Jizw9XYzoGlo6teVuo6POx0zybcLjGNwrKGhtTmWXZo';
-let allRecords=[],selectedIds=new Set(),pendingDelete=[],toastTimer=null,deleteCallback=null,currentDetail=null,lastReport='';
+let allRecords=[],selectedIds=new Set(),pendingDelete=[],toastTimer=null,deleteCallback=null,currentDetail=null,lastReport='',lastReportMeta='';
 
 // ── localStorage – task status ──────────────────────────
 const LS_KEY='striker_task_status';
@@ -175,6 +176,25 @@ function setTaskDone(recordId,field,index,done){
     store[`${recordId}__${field}__${index}`]=done;
     localStorage.setItem(LS_KEY,JSON.stringify(store));
   }catch(e){}
+}
+// ────────────────────────────────────────────────────────
+
+// ── Formátovanie dátumu a času ──────────────────────────
+function formatDatumCas(isoString){
+  if(!isoString)return'—';
+  try{
+    const d=new Date(isoString);
+    const den=String(d.getDate()).padStart(2,'0');
+    const mes=String(d.getMonth()+1).padStart(2,'0');
+    const rok=d.getFullYear();
+    const hod=String(d.getHours()).padStart(2,'0');
+    const min=String(d.getMinutes()).padStart(2,'0');
+    return`${den}.${mes}.${rok} – ${hod}:${min}`;
+  }catch(e){return'—';}
+}
+
+function formatTeraz(){
+  return formatDatumCas(new Date().toISOString());
 }
 // ────────────────────────────────────────────────────────
 
@@ -198,7 +218,8 @@ function openDetail(record){
   currentDetail=record;
   hideAllPanels();
   document.getElementById('detailPanel').style.display='block';
-  document.getElementById('detailHeader').innerHTML=`<div class="detail-date">${record.datum||'—'}</div><div class="detail-title">${record.co_sa_riesilo||'—'}</div>`;
+  const ulozene=record.created_at?`Uložené do systému: ${formatDatumCas(record.created_at)}`:'Uložené do systému: —';
+  document.getElementById('detailHeader').innerHTML=`<div class="detail-date">${record.datum||'—'}</div><div class="detail-ulozene">${ulozene}</div><div class="detail-title">${record.co_sa_riesilo||'—'}</div>`;
   const grid=document.getElementById('detailGrid');
   grid.innerHTML='';
   [{key:'vysledok',label:'Výsledok'},{key:'problem',label:'Problém'},{key:'dalsi_krok',label:'Ďalší krok'}].forEach(f=>{
@@ -259,8 +280,10 @@ function copyDetail(){
     if(!Array.isArray(arr)||!arr.length)return'—';
     return arr.map((item,i)=>(getTaskDone(r.id,field,i)?'✅':'❌')+' '+item).join('\n');
   };
+  const ulozene=r.created_at?`Uložené: ${formatDatumCas(r.created_at)}`:'Uložené: —';
   const text=[
     `Dátum: ${r.datum||'—'}`,
+    ulozene,
     `Čo sa riešilo: ${r.co_sa_riesilo||'—'}`,
     `Výsledok: ${r.vysledok||'—'}`,
     `Problém: ${r.problem||'—'}`,
@@ -278,10 +301,15 @@ async function createAiReport(){
   btn.disabled=true;
   btn.textContent='⏳ Generujem...';
 
+  const teraz=formatTeraz();
+  lastReportMeta=`AI report vytvorený: ${teraz} · ${allRecords.length} záznamov`;
+
   hideAllPanels();
   document.getElementById('reportPanel').style.display='block';
-  document.getElementById('reportMeta').textContent=`${allRecords.length} záznamov`;
+  document.getElementById('reportMeta').textContent=lastReportMeta;
   document.getElementById('reportBody').innerHTML=`<div class="report-loading"><div class="spinner"></div><br>AI analyzuje záznamy...</div>`;
+
+  document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');if(i===1)t.classList.add('active');});
 
   try{
     const res=await fetch('/.netlify/functions/ai-report',{
@@ -298,12 +326,10 @@ async function createAiReport(){
   }finally{
     btn.disabled=false;
     btn.textContent='🧠 AI report';
-    document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');if(i===1)t.classList.add('active');});
   }
 }
 
 function renderReport(text){
-  // Jednoduché markdown-like renderovanie ## nadpisov
   const html=text
     .replace(/&/g,'&amp;')
     .replace(/</g,'&lt;')
@@ -315,7 +341,8 @@ function renderReport(text){
 
 function copyReport(){
   if(!lastReport){showToast('Žiadny report na kopírovanie');return;}
-  navigator.clipboard.writeText(lastReport).then(()=>showToast('Report skopírovaný')).catch(()=>showToast('Kopírovanie zlyhalo'));
+  const full=`${lastReportMeta}\n\n${lastReport}`;
+  navigator.clipboard.writeText(full).then(()=>showToast('Report skopírovaný')).catch(()=>showToast('Kopírovanie zlyhalo'));
 }
 // ────────────────────────────────────────────────────────
 
@@ -369,7 +396,8 @@ function renderList(){
   filtered.forEach(r=>{
     const item=document.createElement('div');
     item.className='zaznam-item'+(selectedIds.has(r.id)?' selected':'');
-    item.innerHTML=`<div class="zaznam-check"></div><div class="zaznam-body"><div class="zaznam-date">${r.datum||'—'}</div><div class="zaznam-title">${r.co_sa_riesilo||'—'}</div><div class="zaznam-sub">${r.dalsi_krok||''}</div></div><button class="zaznam-delete" onclick="event.stopPropagation();deleteSingle(${r.id})">🗑</button>`;
+    const ulozene=r.created_at?`Uložené: ${formatDatumCas(r.created_at)}`:'Uložené: —';
+    item.innerHTML=`<div class="zaznam-check"></div><div class="zaznam-body"><div class="zaznam-date">${r.datum||'—'}</div><div class="zaznam-title">${r.co_sa_riesilo||'—'}</div><div class="zaznam-sub">${r.dalsi_krok||''}</div><div class="zaznam-ulozene">${ulozene}</div></div><button class="zaznam-delete" onclick="event.stopPropagation();deleteSingle(${r.id})">🗑</button>`;
     item.querySelector('.zaznam-check').addEventListener('click',e=>{e.stopPropagation();toggleSelect(r.id);});
     item.addEventListener('click',()=>openDetail(r));
     list.appendChild(item);
