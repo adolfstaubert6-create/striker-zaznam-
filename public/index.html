@@ -40,6 +40,7 @@
     #historyPanel{display:none}
     #detailPanel{display:none}
     #reportPanel{display:none}
+    #openTasksPanel{display:none}
     .search-box{margin-bottom:12px}
     .search-box input{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:14px;padding:10px 14px;border-radius:6px;outline:none;transition:border-color 0.2s}
     .search-box input:focus{border-color:var(--accent)}
@@ -52,6 +53,8 @@
     .btn-ai{background:transparent;border:1px solid var(--accent);color:var(--accent);font-family:'IBM Plex Mono',monospace;font-size:12px;padding:8px 14px;border-radius:6px;cursor:pointer;transition:all 0.2s}
     .btn-ai:hover{background:var(--accent);color:#000}
     .btn-ai:disabled{opacity:0.4;cursor:not-allowed}
+    .btn-tasks{background:transparent;border:1px solid var(--danger);color:var(--danger);font-family:'IBM Plex Mono',monospace;font-size:12px;padding:8px 14px;border-radius:6px;cursor:pointer;transition:all 0.2s}
+    .btn-tasks:hover{background:var(--danger);color:#fff}
     .selected-count{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);margin-left:auto}
     .zaznam-item{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px 16px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start;transition:border-color 0.2s;cursor:pointer;user-select:none}
     .zaznam-item.selected{border-color:var(--accent)}
@@ -93,6 +96,21 @@
     .report-loading{text-align:center;padding:40px;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:13px}
     .report-loading .spinner{display:inline-block;width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:12px}
     @keyframes spin{to{transform:rotate(360deg)}}
+    /* Open tasks panel */
+    .open-tasks-header{background:var(--surface);border:1px solid var(--danger);border-radius:8px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+    .open-tasks-title{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--danger)}
+    .open-tasks-count{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)}
+    .open-task-item{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px 14px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start;cursor:pointer;transition:border-color 0.2s;user-select:none}
+    .open-task-item:hover{border-color:var(--danger)}
+    .open-task-icon{font-size:16px;flex-shrink:0;margin-top:2px}
+    .open-task-body{flex:1}
+    .open-task-text{font-size:14px;color:var(--text);margin-bottom:4px}
+    .open-task-meta{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);display:flex;flex-wrap:wrap;gap:8px;margin-bottom:2px}
+    .open-task-kto{font-family:'IBM Plex Mono',monospace;font-size:11px;padding:2px 7px;border-radius:3px;background:#1a1a1a;border:1px solid var(--border)}
+    .open-task-kto.staubert{color:#e8ff00;border-color:#3a3a00}
+    .open-task-kto.szabo{color:#ff9944;border-color:#3a2000}
+    .open-task-zaznam{font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .open-task-item.hotove{opacity:0.4;pointer-events:none}
   </style>
 </head>
 <body>
@@ -103,6 +121,7 @@
   <button class="tab active" onclick="showTab('new',this)">⚡ Nový vstup</button>
   <button class="tab" onclick="showTab('history',this)">📋 História</button>
 </div>
+
 <div id="newPanel">
   <h2>Vložiť pracovný záznam</h2>
   <textarea id="inputText" placeholder="Vlož text z WhatsApp / hovoru / porady..."></textarea>
@@ -110,6 +129,7 @@
   <div id="status"></div>
   <div id="result"><div class="result-grid" id="resultGrid"></div></div>
 </div>
+
 <div id="historyPanel">
   <div class="search-box">
     <input type="text" id="searchInput" placeholder="🔍 Hľadať v histórii..." oninput="renderList()"/>
@@ -117,11 +137,13 @@
   <div class="history-toolbar">
     <button class="btn-sm" onclick="toggleSelectAll()" id="btnSelectAll">Označiť všetko</button>
     <button class="btn-sm btn-danger" id="btnDeleteSelected" onclick="deleteSelected()" disabled>🗑 Vymazať označené (0)</button>
+    <button class="btn-tasks" onclick="showOpenTasks()">❌ Otvorené úlohy</button>
     <button class="btn-ai" id="btnAiReport" onclick="createAiReport()">🧠 AI report</button>
     <span class="selected-count" id="selectedCount"></span>
   </div>
   <div id="recordsList"></div>
 </div>
+
 <div id="detailPanel">
   <div class="detail-actions">
     <button class="btn-sm" onclick="goBack()">⬅ Späť do histórie</button>
@@ -130,6 +152,7 @@
   <div class="detail-header" id="detailHeader"></div>
   <div class="result-grid" id="detailGrid"></div>
 </div>
+
 <div id="reportPanel">
   <div class="report-actions">
     <button class="btn-sm" onclick="goBackFromReport()">⬅ Späť do histórie</button>
@@ -141,6 +164,18 @@
   </div>
   <div class="report-body" id="reportBody"></div>
 </div>
+
+<div id="openTasksPanel">
+  <div class="detail-actions">
+    <button class="btn-sm" onclick="goBackFromOpenTasks()">⬅ Späť do histórie</button>
+  </div>
+  <div class="open-tasks-header">
+    <span class="open-tasks-title">❌ Otvorené úlohy</span>
+    <span class="open-tasks-count" id="openTasksCount"></span>
+  </div>
+  <div id="openTasksList"></div>
+</div>
+
 <div class="modal-overlay" id="modal">
   <div class="modal">
     <h3>Potvrdiť vymazanie</h3>
@@ -155,6 +190,7 @@
   <span id="toastText"></span>
   <button class="toast-undo" onclick="undoDelete()">Obnoviť</button>
 </div>
+
 <script>
 const SUPABASE_URL='https://jjvegnwqipmcipwvdjje.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpqdmVnbndxaXBtY2lwd3ZkamplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTczMTYsImV4cCI6MjA5MzM5MzMxNn0.Jizw9XYzoGlo6teVuo6POx0zybcLjGNwrKGhtTmWXZo';
@@ -198,21 +234,116 @@ function formatTeraz(){
 }
 // ────────────────────────────────────────────────────────
 
-function showTab(tab,el){
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  if(el)el.classList.add('active');
-  document.getElementById('newPanel').style.display=tab==='new'?'block':'none';
-  document.getElementById('historyPanel').style.display=tab==='history'?'block':'none';
-  document.getElementById('detailPanel').style.display='none';
-  document.getElementById('reportPanel').style.display='none';
-  if(tab==='history')loadHistory();
-}
-
+// ── Panely ──────────────────────────────────────────────
 function hideAllPanels(){
-  ['newPanel','historyPanel','detailPanel','reportPanel'].forEach(id=>{
+  ['newPanel','historyPanel','detailPanel','reportPanel','openTasksPanel'].forEach(id=>{
     document.getElementById(id).style.display='none';
   });
 }
+
+function showTab(tab,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  if(el)el.classList.add('active');
+  hideAllPanels();
+  document.getElementById('newPanel').style.display=tab==='new'?'block':'none';
+  document.getElementById('historyPanel').style.display=tab==='history'?'block':'none';
+  if(tab==='history')loadHistory();
+}
+
+function goBack(){
+  currentDetail=null;
+  hideAllPanels();
+  document.getElementById('historyPanel').style.display='block';
+  document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');if(i===1)t.classList.add('active');});
+}
+
+function goBackFromReport(){
+  hideAllPanels();
+  document.getElementById('historyPanel').style.display='block';
+  document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');if(i===1)t.classList.add('active');});
+}
+
+function goBackFromOpenTasks(){
+  hideAllPanels();
+  document.getElementById('historyPanel').style.display='block';
+  document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');if(i===1)t.classList.add('active');});
+}
+// ────────────────────────────────────────────────────────
+
+// ── OTVORENÉ ÚLOHY ──────────────────────────────────────
+function showOpenTasks(){
+  if(!allRecords.length){showToast('Najprv načítaj históriu');return;}
+  hideAllPanels();
+  document.getElementById('openTasksPanel').style.display='block';
+  document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');if(i===1)t.classList.add('active');});
+  renderOpenTasks();
+}
+
+function renderOpenTasks(){
+  const list=document.getElementById('openTasksList');
+  list.innerHTML='';
+  const openItems=[];
+
+  allRecords.forEach(r=>{
+    [{field:'ulohy_staubert',label:'Staubert'},{field:'ulohy_szabo',label:'Szabó'}].forEach(f=>{
+      const arr=r[f.field];
+      if(!Array.isArray(arr))return;
+      arr.forEach((item,i)=>{
+        if(!getTaskDone(r.id,f.field,i)){
+          openItems.push({recordId:r.id,field:f.field,index:i,label:f.label,text:item,datum:r.datum,created_at:r.created_at,co_sa_riesilo:r.co_sa_riesilo});
+        }
+      });
+    });
+  });
+
+  document.getElementById('openTasksCount').textContent=`${openItems.length} otvorených`;
+
+  if(!openItems.length){
+    list.innerHTML='<div class="no-records">✅ Všetky úlohy sú splnené!</div>';
+    return;
+  }
+
+  openItems.forEach(item=>{
+    const div=document.createElement('div');
+    div.className='open-task-item';
+    div.id=`ot-${item.recordId}-${item.field}-${item.index}`;
+
+    const ulozene=item.created_at?formatDatumCas(item.created_at):'—';
+
+    div.innerHTML=`
+      <span class="open-task-icon">❌</span>
+      <div class="open-task-body">
+        <div class="open-task-text">${escHtml(item.text)}</div>
+        <div class="open-task-meta">
+          <span class="open-task-kto ${item.label.toLowerCase()}">${item.label}</span>
+          <span>${item.datum||'—'}</span>
+          <span>Uložené: ${ulozene}</span>
+        </div>
+        <div class="open-task-zaznam">${escHtml(item.co_sa_riesilo||'—')}</div>
+      </div>`;
+
+    div.addEventListener('click',()=>{
+      setTaskDone(item.recordId,item.field,item.index,true);
+      div.querySelector('.open-task-icon').textContent='✅';
+      div.classList.add('hotove');
+      setTimeout(()=>{
+        div.remove();
+        const zostatok=document.querySelectorAll('.open-task-item:not(.hotove)').length;
+        document.getElementById('openTasksCount').textContent=`${zostatok} otvorených`;
+        if(zostatok===0){
+          list.innerHTML='<div class="no-records">✅ Všetky úlohy sú splnené!</div>';
+        }
+      },600);
+    });
+
+    list.appendChild(div);
+  });
+}
+
+function escHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+// ────────────────────────────────────────────────────────
 
 function openDetail(record){
   currentDetail=record;
@@ -260,19 +391,6 @@ function openDetail(record){
   });
 }
 
-function goBack(){
-  currentDetail=null;
-  hideAllPanels();
-  document.getElementById('historyPanel').style.display='block';
-  document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');if(i===1)t.classList.add('active');});
-}
-
-function goBackFromReport(){
-  hideAllPanels();
-  document.getElementById('historyPanel').style.display='block';
-  document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');if(i===1)t.classList.add('active');});
-}
-
 function copyDetail(){
   if(!currentDetail)return;
   const r=currentDetail;
@@ -308,7 +426,6 @@ async function createAiReport(){
   document.getElementById('reportPanel').style.display='block';
   document.getElementById('reportMeta').textContent=lastReportMeta;
   document.getElementById('reportBody').innerHTML=`<div class="report-loading"><div class="spinner"></div><br>AI analyzuje záznamy...</div>`;
-
   document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');if(i===1)t.classList.add('active');});
 
   try{
