@@ -55,6 +55,8 @@
     .btn-ai:disabled{opacity:0.4;cursor:not-allowed}
     .btn-tasks{background:transparent;border:1px solid var(--danger);color:var(--danger);font-family:'IBM Plex Mono',monospace;font-size:12px;padding:8px 14px;border-radius:6px;cursor:pointer;transition:all 0.2s}
     .btn-tasks:hover{background:var(--danger);color:#fff}
+    .btn-edit{background:transparent;border:1px solid var(--muted);color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:12px;padding:8px 14px;border-radius:6px;cursor:pointer;transition:all 0.2s}
+    .btn-edit:hover{border-color:var(--accent);color:var(--accent)}
     .selected-count{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);margin-left:auto}
     .zaznam-item{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px 16px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start;transition:border-color 0.2s;cursor:pointer;user-select:none}
     .zaznam-item.selected{border-color:var(--accent)}
@@ -81,7 +83,7 @@
     .modal-btns{display:flex;gap:8px;justify-content:flex-end}
     .btn-cancel{padding:10px 20px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text);cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:13px}
     .btn-confirm-delete{padding:10px 20px;border:none;border-radius:6px;background:var(--danger);color:#fff;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:13px}
-    .detail-actions{display:flex;gap:8px;margin-bottom:16px}
+    .detail-actions{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
     .detail-header{background:var(--surface);border:1px solid var(--accent);border-radius:8px;padding:16px 20px;margin-bottom:16px}
     .detail-date{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);margin-bottom:4px}
     .detail-ulozene{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:6px}
@@ -96,7 +98,6 @@
     .report-loading{text-align:center;padding:40px;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:13px}
     .report-loading .spinner{display:inline-block;width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:12px}
     @keyframes spin{to{transform:rotate(360deg)}}
-    /* Open tasks panel */
     .open-tasks-header{background:var(--surface);border:1px solid var(--danger);border-radius:8px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
     .open-tasks-title{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--danger)}
     .open-tasks-count{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)}
@@ -111,6 +112,21 @@
     .open-task-kto.szabo{color:#ff9944;border-color:#3a2000}
     .open-task-zaznam{font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .open-task-item.hotove{opacity:0.4;pointer-events:none}
+    /* ── EDIT FORM ── */
+    .edit-form{display:flex;flex-direction:column;gap:14px}
+    .edit-field{display:flex;flex-direction:column;gap:6px}
+    .edit-label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:2px}
+    .edit-input{background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:14px;padding:10px 12px;border-radius:6px;outline:none;transition:border-color 0.2s;width:100%}
+    .edit-input:focus{border-color:var(--accent)}
+    .edit-textarea{background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:14px;padding:10px 12px;border-radius:6px;outline:none;transition:border-color 0.2s;width:100%;resize:vertical;min-height:80px;line-height:1.6}
+    .edit-textarea:focus{border-color:var(--accent)}
+    .edit-hint{font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace}
+    .edit-actions{display:flex;gap:10px;padding-top:8px;align-items:center;flex-wrap:wrap}
+    .btn-save{background:var(--accent);color:#000;border:none;padding:10px 24px;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;cursor:pointer;transition:opacity 0.2s}
+    .btn-save:disabled{opacity:0.4;cursor:not-allowed}
+    .edit-status{font-size:12px;font-family:'IBM Plex Mono',monospace;color:var(--muted)}
+    .edit-status.ok{color:var(--accent)}
+    .edit-status.error{color:var(--danger)}
   </style>
 </head>
 <body>
@@ -148,9 +164,49 @@
   <div class="detail-actions">
     <button class="btn-sm" onclick="goBack()">⬅ Späť do histórie</button>
     <button class="btn-sm" onclick="copyDetail()">📋 Kopírovať záznam</button>
+    <button class="btn-edit" id="btnEdit" onclick="toggleEditMode()">✏️ Upraviť záznam</button>
   </div>
   <div class="detail-header" id="detailHeader"></div>
   <div class="result-grid" id="detailGrid"></div>
+  <div id="editForm" style="display:none">
+    <div class="edit-form">
+      <div class="edit-field">
+        <label class="edit-label">Dátum</label>
+        <input type="date" class="edit-input" id="edit-datum"/>
+      </div>
+      <div class="edit-field">
+        <label class="edit-label">Čo sa riešilo</label>
+        <textarea class="edit-textarea" id="edit-co_sa_riesilo" rows="3"></textarea>
+      </div>
+      <div class="edit-field">
+        <label class="edit-label">Výsledok</label>
+        <textarea class="edit-textarea" id="edit-vysledok" rows="3"></textarea>
+      </div>
+      <div class="edit-field">
+        <label class="edit-label">Problém</label>
+        <textarea class="edit-textarea" id="edit-problem" rows="2"></textarea>
+      </div>
+      <div class="edit-field">
+        <label class="edit-label">Úlohy – Staubert</label>
+        <textarea class="edit-textarea" id="edit-ulohy_staubert" rows="4"></textarea>
+        <span class="edit-hint">Každá úloha na nový riadok</span>
+      </div>
+      <div class="edit-field">
+        <label class="edit-label">Úlohy – Szabó</label>
+        <textarea class="edit-textarea" id="edit-ulohy_szabo" rows="4"></textarea>
+        <span class="edit-hint">Každá úloha na nový riadok</span>
+      </div>
+      <div class="edit-field">
+        <label class="edit-label">Ďalší krok</label>
+        <textarea class="edit-textarea" id="edit-dalsi_krok" rows="2"></textarea>
+      </div>
+      <div class="edit-actions">
+        <button class="btn-save" id="btnSave" onclick="saveEdit()">💾 Uložiť zmeny</button>
+        <button class="btn-sm" onclick="cancelEdit()">Zrušiť</button>
+        <span class="edit-status" id="editStatus"></span>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div id="reportPanel">
@@ -198,24 +254,14 @@ let allRecords=[],selectedIds=new Set(),pendingDelete=[],toastTimer=null,deleteC
 
 // ── localStorage – task status ──────────────────────────
 const LS_KEY='striker_task_status';
-
 function getTaskDone(recordId,field,index){
-  try{
-    const store=JSON.parse(localStorage.getItem(LS_KEY)||'{}');
-    return store[`${recordId}__${field}__${index}`]===true;
-  }catch(e){return false;}
+  try{const store=JSON.parse(localStorage.getItem(LS_KEY)||'{}');return store[`${recordId}__${field}__${index}`]===true;}catch(e){return false;}
 }
-
 function setTaskDone(recordId,field,index,done){
-  try{
-    const store=JSON.parse(localStorage.getItem(LS_KEY)||'{}');
-    store[`${recordId}__${field}__${index}`]=done;
-    localStorage.setItem(LS_KEY,JSON.stringify(store));
-  }catch(e){}
+  try{const store=JSON.parse(localStorage.getItem(LS_KEY)||'{}');store[`${recordId}__${field}__${index}`]=done;localStorage.setItem(LS_KEY,JSON.stringify(store));}catch(e){}
 }
-// ────────────────────────────────────────────────────────
 
-// ── Formátovanie dátumu a času ──────────────────────────
+// ── Formátovanie ────────────────────────────────────────
 function formatDatumCas(isoString){
   if(!isoString)return'—';
   try{
@@ -228,11 +274,7 @@ function formatDatumCas(isoString){
     return`${den}.${mes}.${rok} – ${hod}:${min}`;
   }catch(e){return'—';}
 }
-
-function formatTeraz(){
-  return formatDatumCas(new Date().toISOString());
-}
-// ────────────────────────────────────────────────────────
+function formatTeraz(){return formatDatumCas(new Date().toISOString());}
 
 // ── Panely ──────────────────────────────────────────────
 function hideAllPanels(){
@@ -240,7 +282,6 @@ function hideAllPanels(){
     document.getElementById(id).style.display='none';
   });
 }
-
 function showTab(tab,el){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   if(el)el.classList.add('active');
@@ -249,28 +290,24 @@ function showTab(tab,el){
   document.getElementById('historyPanel').style.display=tab==='history'?'block':'none';
   if(tab==='history')loadHistory();
 }
-
 function goBack(){
   currentDetail=null;
   hideAllPanels();
   document.getElementById('historyPanel').style.display='block';
   document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');if(i===1)t.classList.add('active');});
 }
-
 function goBackFromReport(){
   hideAllPanels();
   document.getElementById('historyPanel').style.display='block';
   document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');if(i===1)t.classList.add('active');});
 }
-
 function goBackFromOpenTasks(){
   hideAllPanels();
   document.getElementById('historyPanel').style.display='block';
   document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');if(i===1)t.classList.add('active');});
 }
-// ────────────────────────────────────────────────────────
 
-// ── OTVORENÉ ÚLOHY ──────────────────────────────────────
+// ── OPEN TASKS ──────────────────────────────────────────
 function showOpenTasks(){
   if(!allRecords.length){showToast('Najprv načítaj históriu');return;}
   hideAllPanels();
@@ -278,12 +315,10 @@ function showOpenTasks(){
   document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');if(i===1)t.classList.add('active');});
   renderOpenTasks();
 }
-
 function renderOpenTasks(){
   const list=document.getElementById('openTasksList');
   list.innerHTML='';
   const openItems=[];
-
   allRecords.forEach(r=>{
     [{field:'ulohy_staubert',label:'Staubert'},{field:'ulohy_szabo',label:'Szabó'}].forEach(f=>{
       const arr=r[f.field];
@@ -295,33 +330,14 @@ function renderOpenTasks(){
       });
     });
   });
-
   document.getElementById('openTasksCount').textContent=`${openItems.length} otvorených`;
-
-  if(!openItems.length){
-    list.innerHTML='<div class="no-records">✅ Všetky úlohy sú splnené!</div>';
-    return;
-  }
-
+  if(!openItems.length){list.innerHTML='<div class="no-records">✅ Všetky úlohy sú splnené!</div>';return;}
   openItems.forEach(item=>{
     const div=document.createElement('div');
     div.className='open-task-item';
     div.id=`ot-${item.recordId}-${item.field}-${item.index}`;
-
     const ulozene=item.created_at?formatDatumCas(item.created_at):'—';
-
-    div.innerHTML=`
-      <span class="open-task-icon">❌</span>
-      <div class="open-task-body">
-        <div class="open-task-text">${escHtml(item.text)}</div>
-        <div class="open-task-meta">
-          <span class="open-task-kto ${item.label.toLowerCase()}">${item.label}</span>
-          <span>${item.datum||'—'}</span>
-          <span>Uložené: ${ulozene}</span>
-        </div>
-        <div class="open-task-zaznam">${escHtml(item.co_sa_riesilo||'—')}</div>
-      </div>`;
-
+    div.innerHTML=`<span class="open-task-icon">❌</span><div class="open-task-body"><div class="open-task-text">${escHtml(item.text)}</div><div class="open-task-meta"><span class="open-task-kto ${item.label.toLowerCase()}">${item.label}</span><span>${item.datum||'—'}</span><span>Uložené: ${ulozene}</span></div><div class="open-task-zaznam">${escHtml(item.co_sa_riesilo||'—')}</div></div>`;
     div.addEventListener('click',()=>{
       setTaskDone(item.recordId,item.field,item.index,true);
       div.querySelector('.open-task-icon').textContent='✅';
@@ -330,29 +346,29 @@ function renderOpenTasks(){
         div.remove();
         const zostatok=document.querySelectorAll('.open-task-item:not(.hotove)').length;
         document.getElementById('openTasksCount').textContent=`${zostatok} otvorených`;
-        if(zostatok===0){
-          list.innerHTML='<div class="no-records">✅ Všetky úlohy sú splnené!</div>';
-        }
+        if(zostatok===0){list.innerHTML='<div class="no-records">✅ Všetky úlohy sú splnené!</div>';}
       },600);
     });
-
     list.appendChild(div);
   });
 }
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
-function escHtml(s){
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-// ────────────────────────────────────────────────────────
-
+// ── DETAIL ──────────────────────────────────────────────
 function openDetail(record){
   currentDetail=record;
   hideAllPanels();
   document.getElementById('detailPanel').style.display='block';
+  document.getElementById('editForm').style.display='none';
+  document.getElementById('detailGrid').style.display='flex';
+  document.getElementById('btnEdit').textContent='✏️ Upraviť záznam';
+
   const ulozene=record.created_at?`Uložené do systému: ${formatDatumCas(record.created_at)}`:'Uložené do systému: —';
-  document.getElementById('detailHeader').innerHTML=`<div class="detail-date">${record.datum||'—'}</div><div class="detail-ulozene">${ulozene}</div><div class="detail-title">${record.co_sa_riesilo||'—'}</div>`;
+  document.getElementById('detailHeader').innerHTML=`<div class="detail-date">${record.datum||'—'}</div><div class="detail-ulozene">${ulozene}</div><div class="detail-title">${escHtml(record.co_sa_riesilo||'—')}</div>`;
+
   const grid=document.getElementById('detailGrid');
   grid.innerHTML='';
+
   [{key:'vysledok',label:'Výsledok'},{key:'problem',label:'Problém'},{key:'dalsi_krok',label:'Ďalší krok'}].forEach(f=>{
     const val=record[f.key];
     const div=document.createElement('div');div.className='field';
@@ -361,6 +377,7 @@ function openDetail(record){
     if(val&&val!==''){vdiv.textContent=val;}else{vdiv.textContent='—';vdiv.classList.add('empty');}
     div.appendChild(lbl);div.appendChild(vdiv);grid.appendChild(div);
   });
+
   [{key:'ulohy_staubert',label:'Úlohy – Staubert'},{key:'ulohy_szabo',label:'Úlohy – Szabó'}].forEach(f=>{
     const val=record[f.key];
     const div=document.createElement('div');div.className='field';
@@ -372,8 +389,7 @@ function openDetail(record){
         const done=getTaskDone(record.id,f.key,i);
         const t=document.createElement('div');
         t.className='task-item'+(done?' done':'');
-        const icon=document.createElement('span');icon.className='task-icon';
-        icon.textContent=done?'✅':'❌';
+        const icon=document.createElement('span');icon.className='task-icon';icon.textContent=done?'✅':'❌';
         const text=document.createElement('span');text.textContent=item;
         t.appendChild(icon);t.appendChild(text);
         t.addEventListener('click',()=>{
@@ -412,28 +428,111 @@ function copyDetail(){
   navigator.clipboard.writeText(text).then(()=>showToast('Záznam skopírovaný')).catch(()=>showToast('Kopírovanie zlyhalo'));
 }
 
+// ── EDIT ────────────────────────────────────────────────
+function toggleEditMode(){
+  const editForm=document.getElementById('editForm');
+  const detailGrid=document.getElementById('detailGrid');
+  const btnEdit=document.getElementById('btnEdit');
+
+  if(editForm.style.display==='none'){
+    if(!currentDetail)return;
+    const r=currentDetail;
+    document.getElementById('edit-datum').value=r.datum||'';
+    document.getElementById('edit-co_sa_riesilo').value=r.co_sa_riesilo||'';
+    document.getElementById('edit-vysledok').value=r.vysledok||'';
+    document.getElementById('edit-problem').value=r.problem||'';
+    document.getElementById('edit-dalsi_krok').value=r.dalsi_krok||'';
+    document.getElementById('edit-ulohy_staubert').value=Array.isArray(r.ulohy_staubert)?r.ulohy_staubert.join('\n'):'';
+    document.getElementById('edit-ulohy_szabo').value=Array.isArray(r.ulohy_szabo)?r.ulohy_szabo.join('\n'):'';
+    document.getElementById('editStatus').textContent='';
+    document.getElementById('editStatus').className='edit-status';
+    editForm.style.display='block';
+    detailGrid.style.display='none';
+    btnEdit.textContent='👁 Zobraziť detail';
+  } else {
+    editForm.style.display='none';
+    detailGrid.style.display='flex';
+    btnEdit.textContent='✏️ Upraviť záznam';
+  }
+}
+
+function cancelEdit(){
+  document.getElementById('editForm').style.display='none';
+  document.getElementById('detailGrid').style.display='flex';
+  document.getElementById('btnEdit').textContent='✏️ Upraviť záznam';
+  document.getElementById('editStatus').textContent='';
+  document.getElementById('editStatus').className='edit-status';
+}
+
+async function saveEdit(){
+  if(!currentDetail)return;
+  const btn=document.getElementById('btnSave');
+  const statusEl=document.getElementById('editStatus');
+  btn.disabled=true;
+  statusEl.textContent='Ukladám...';
+  statusEl.className='edit-status';
+
+  const ulohy_staubert=document.getElementById('edit-ulohy_staubert').value
+    .split('\n').map(l=>l.trim()).filter(Boolean);
+  const ulohy_szabo=document.getElementById('edit-ulohy_szabo').value
+    .split('\n').map(l=>l.trim()).filter(Boolean);
+
+  const payload={
+    id: currentDetail.id,
+    datum: document.getElementById('edit-datum').value,
+    co_sa_riesilo: document.getElementById('edit-co_sa_riesilo').value.trim(),
+    vysledok: document.getElementById('edit-vysledok').value.trim(),
+    problem: document.getElementById('edit-problem').value.trim(),
+    dalsi_krok: document.getElementById('edit-dalsi_krok').value.trim(),
+    ulohy_staubert,
+    ulohy_szabo,
+  };
+
+  try{
+    const res=await fetch('/.netlify/functions/update-record',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload),
+    });
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.error||'Chyba servera');
+
+    // FIX: bezpečná verzia — ak function vráti record, použi ho, inak zlúč s payload
+    const updated=data.record ? data.record : {...currentDetail,...payload};
+
+    currentDetail=updated;
+    const idx=allRecords.findIndex(r=>r.id===updated.id);
+    if(idx!==-1)allRecords[idx]=updated;
+
+    statusEl.textContent='✓ Uložené';
+    statusEl.className='edit-status ok';
+
+    setTimeout(()=>{
+      cancelEdit();
+      openDetail(updated);
+    },800);
+  }catch(e){
+    statusEl.textContent='✗ '+e.message;
+    statusEl.className='edit-status error';
+  }finally{
+    btn.disabled=false;
+  }
+}
+
 // ── AI REPORT ───────────────────────────────────────────
 async function createAiReport(){
   if(!allRecords.length){showToast('Žiadne záznamy na analýzu');return;}
   const btn=document.getElementById('btnAiReport');
-  btn.disabled=true;
-  btn.textContent='⏳ Generujem...';
-
+  btn.disabled=true;btn.textContent='⏳ Generujem...';
   const teraz=formatTeraz();
   lastReportMeta=`AI report vytvorený: ${teraz} · ${allRecords.length} záznamov`;
-
   hideAllPanels();
   document.getElementById('reportPanel').style.display='block';
   document.getElementById('reportMeta').textContent=lastReportMeta;
   document.getElementById('reportBody').innerHTML=`<div class="report-loading"><div class="spinner"></div><br>AI analyzuje záznamy...</div>`;
   document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');if(i===1)t.classList.add('active');});
-
   try{
-    const res=await fetch('/.netlify/functions/ai-report',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({records:allRecords})
-    });
+    const res=await fetch('/.netlify/functions/ai-report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({records:allRecords})});
     const data=await res.json();
     if(!res.ok)throw new Error(data.error||'Chyba servera');
     lastReport=data.report;
@@ -441,28 +540,20 @@ async function createAiReport(){
   }catch(e){
     document.getElementById('reportBody').innerHTML=`<div style="color:var(--danger);font-family:'IBM Plex Mono',monospace;font-size:13px;">✗ ${e.message}</div>`;
   }finally{
-    btn.disabled=false;
-    btn.textContent='🧠 AI report';
+    btn.disabled=false;btn.textContent='🧠 AI report';
   }
 }
-
 function renderReport(text){
-  const html=text
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/^## (.+)$/gm,'<h2>$1</h2>')
-    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  const html=text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/^## (.+)$/gm,'<h2>$1</h2>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
   document.getElementById('reportBody').innerHTML=html;
 }
-
 function copyReport(){
   if(!lastReport){showToast('Žiadny report na kopírovanie');return;}
   const full=`${lastReportMeta}\n\n${lastReport}`;
   navigator.clipboard.writeText(full).then(()=>showToast('Report skopírovaný')).catch(()=>showToast('Kopírovanie zlyhalo'));
 }
-// ────────────────────────────────────────────────────────
 
+// ── NOVÝ VSTUP ──────────────────────────────────────────
 async function spracovat(){
   const text=document.getElementById('inputText').value.trim();
   if(!text){setStatus('Vlož text.','error');return;}
@@ -477,9 +568,7 @@ async function spracovat(){
   }catch(e){setStatus('✗ '+e.message,'error');}
   finally{btn.disabled=false;}
 }
-
 function setStatus(msg,type){const el=document.getElementById('status');el.textContent=msg;el.className=type;}
-
 function zobrazVysledok(d){
   const grid=document.getElementById('resultGrid');grid.innerHTML='';
   [{key:'datum',label:'Dátum'},{key:'co_sa_riesilo',label:'Čo sa riešilo'},{key:'vysledok',label:'Výsledok'},{key:'problem',label:'Problém'},{key:'ulohy_staubert',label:'Úlohy – Staubert',isArray:true},{key:'ulohy_szabo',label:'Úlohy – Szabó',isArray:true},{key:'dalsi_krok',label:'Ďalší krok'}].forEach(f=>{
@@ -494,6 +583,7 @@ function zobrazVysledok(d){
   document.getElementById('result').style.display='block';
 }
 
+// ── HISTÓRIA ────────────────────────────────────────────
 async function loadHistory(){
   const list=document.getElementById('recordsList');
   list.innerHTML='<div class="no-records">Načítavam...</div>';
@@ -503,7 +593,6 @@ async function loadHistory(){
     allRecords=await res.json();renderList();
   }catch(e){list.innerHTML='<div class="no-records">Chyba načítania</div>';}
 }
-
 function renderList(){
   const list=document.getElementById('recordsList');
   const q=(document.getElementById('searchInput')?.value||'').toLowerCase().trim();
@@ -514,16 +603,15 @@ function renderList(){
     const item=document.createElement('div');
     item.className='zaznam-item'+(selectedIds.has(r.id)?' selected':'');
     const ulozene=r.created_at?`Uložené: ${formatDatumCas(r.created_at)}`:'Uložené: —';
-    item.innerHTML=`<div class="zaznam-check"></div><div class="zaznam-body"><div class="zaznam-date">${r.datum||'—'}</div><div class="zaznam-title">${r.co_sa_riesilo||'—'}</div><div class="zaznam-sub">${r.dalsi_krok||''}</div><div class="zaznam-ulozene">${ulozene}</div></div><button class="zaznam-delete" onclick="event.stopPropagation();deleteSingle(${r.id})">🗑</button>`;
+    // FIX: id v úvodzovkách — bezpečné aj pre UUID
+    item.innerHTML=`<div class="zaznam-check"></div><div class="zaznam-body"><div class="zaznam-date">${r.datum||'—'}</div><div class="zaznam-title">${escHtml(r.co_sa_riesilo||'—')}</div><div class="zaznam-sub">${escHtml(r.dalsi_krok||'')}</div><div class="zaznam-ulozene">${ulozene}</div></div><button class="zaznam-delete" onclick="event.stopPropagation();deleteSingle('${r.id}')">🗑</button>`;
     item.querySelector('.zaznam-check').addEventListener('click',e=>{e.stopPropagation();toggleSelect(r.id);});
     item.addEventListener('click',()=>openDetail(r));
     list.appendChild(item);
   });
 }
-
 function toggleSelect(id){if(selectedIds.has(id))selectedIds.delete(id);else selectedIds.add(id);updateToolbar();renderList();}
 function toggleSelectAll(){if(selectedIds.size===allRecords.length)selectedIds.clear();else allRecords.forEach(r=>selectedIds.add(r.id));updateToolbar();renderList();}
-
 function updateToolbar(){
   const n=selectedIds.size;
   const btn=document.getElementById('btnDeleteSelected');
@@ -532,12 +620,12 @@ function updateToolbar(){
   document.getElementById('btnSelectAll').textContent=selectedIds.size===allRecords.length&&allRecords.length>0?'Zrušiť výber':'Označiť všetko';
 }
 
+// ── MAZANIE ─────────────────────────────────────────────
 function deleteSingle(id){showModal('Naozaj chceš vymazať tento záznam?',()=>executeDelete([id]));}
 function deleteSelected(){const ids=[...selectedIds];showModal(`Naozaj chceš vymazať ${ids.length} záznam${ids.length>1?'ov':''}?`,()=>executeDelete(ids));}
 function showModal(text,callback){document.getElementById('modalText').textContent=text;document.getElementById('modal').classList.add('show');deleteCallback=callback;}
 function closeModal(){document.getElementById('modal').classList.remove('show');}
 function confirmDelete(){const cb=deleteCallback;closeModal();deleteCallback=null;if(cb)cb();}
-
 async function executeDelete(ids){
   pendingDelete=allRecords.filter(r=>ids.includes(r.id));
   allRecords=allRecords.filter(r=>!ids.includes(r.id));
@@ -549,20 +637,19 @@ async function executeDelete(ids){
     showToast(`${ids.length} záznam${ids.length>1?'y':''} vymazaný`);
   }catch(e){allRecords=[...allRecords,...pendingDelete];renderList();showToast('Chyba: '+e.message);}
 }
-
 function undoDelete(){
   if(!pendingDelete.length)return;
   allRecords=[...allRecords,...pendingDelete].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
   pendingDelete=[];renderList();hideToast();
 }
 
+// ── TOAST ───────────────────────────────────────────────
 function showToast(text){
   clearTimeout(toastTimer);
   document.getElementById('toastText').textContent=text;
   document.getElementById('toast').classList.add('show');
   toastTimer=setTimeout(hideToast,5000);
 }
-
 function hideToast(){document.getElementById('toast').classList.remove('show');}
 </script>
 </body>
