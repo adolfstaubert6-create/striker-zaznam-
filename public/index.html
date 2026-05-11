@@ -304,6 +304,8 @@
     .pill.sz { background: var(--sz-dim); color: var(--sz); border: 1px solid var(--sz-border); }
     .pill.prob { background: var(--danger-dim); color: var(--danger); border: 1px solid rgba(255,69,0,.25); }
     .zaznam-ulozene { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted2); margin-top: 4px; }
+    .zaznam-event-date { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); margin-bottom: 4px; }
+    .detail-event-date { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); margin-bottom: 8px; }
     .zaznam-delete { background: none; border: none; color: var(--muted2); cursor: pointer; font-size: 14px; padding: 4px; border-radius: 4px; transition: color .15s; flex-shrink: 0; }
     .zaznam-delete:hover { color: var(--danger); }
     .no-records { text-align: center; padding: 40px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
@@ -962,7 +964,8 @@ function openDetail(record){
   document.getElementById('editForm').style.display='none';
   document.getElementById('detailGrid').style.display='flex';
   document.getElementById('btnEdit').textContent='✏️ Upraviť';
-  document.getElementById('detailHeader').innerHTML=`<div class="detail-date">${record.datum||'—'}</div><div class="detail-ulozene">${record.created_at?`Uložené: ${fmt(record.created_at)}`:'—'}</div><div class="detail-title">${escHtml(record.co_sa_riesilo||'—')}</div>`;
+  const eventDateHtml=record.datum&&record.datum.trim()?`<div class="detail-event-date">Dátum udalosti: ${record.datum}</div>`:'';
+  document.getElementById('detailHeader').innerHTML=`<div class="detail-date">${record.created_at?fmt(record.created_at):'—'}</div>${eventDateHtml}<div class="detail-title">${escHtml(record.co_sa_riesilo||'—')}</div>`;
   const grid=document.getElementById('detailGrid');grid.innerHTML='';
   [{key:'vysledok',label:'Výsledok',cls:''},{key:'problem',label:'Problém',cls:''},{key:'dalsi_krok',label:'Ďalší krok',cls:''}].forEach(f=>{
     const div=document.createElement('div');div.className='field';
@@ -1094,7 +1097,9 @@ function renderList(){
     const hasSz=Array.isArray(r.ulohy_szabo)&&r.ulohy_szabo.length>0;
     const hasProb=r.problem&&r.problem.trim()!=='';
     const pills=(hasSt?'<span class="pill st">Staubert</span>':'')+(hasSz?'<span class="pill sz">Szabó</span>':'')+(hasProb?'<span class="pill prob">⚠ Problém</span>':'');
-    item.innerHTML=`<div class="zaznam-check"></div><div class="zaznam-body"><div class="zaznam-date">${r.datum||'—'}</div><div class="zaznam-title">${escHtml(r.co_sa_riesilo||'—')}</div><div class="zaznam-sub">${escHtml(r.dalsi_krok||'')}</div>${pills?'<div class="zaznam-pills">'+pills+'</div>':''}<div class="zaznam-ulozene">${r.created_at?fmt(r.created_at):''}</div></div><button class="zaznam-delete" onclick="event.stopPropagation();deleteSingle('${r.id}')">🗑</button>`;
+    const mainDate=r.created_at?fmt(r.created_at):'—';
+    const eventDate=r.datum&&r.datum.trim()?`<span class="zaznam-event-date">Udalosť: ${r.datum}</span>`:'';
+    item.innerHTML=`<div class="zaznam-check"></div><div class="zaznam-body"><div class="zaznam-date">${mainDate}</div>${eventDate}<div class="zaznam-title">${escHtml(r.co_sa_riesilo||'—')}</div><div class="zaznam-sub">${escHtml(r.dalsi_krok||'')}</div>${pills?'<div class="zaznam-pills">'+pills+'</div>':''}</div><button class="zaznam-delete" onclick="event.stopPropagation();deleteSingle('${r.id}')">🗑</button>`;
     item.querySelector('.zaznam-check').addEventListener('click',e=>{e.stopPropagation();toggleSelect(r.id);});
     item.addEventListener('click',()=>openDetail(r));
     list.appendChild(item);
