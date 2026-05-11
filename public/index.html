@@ -1231,16 +1231,25 @@ function scheduleRender(){
 }
 
 function initRealtime(){
-  if(_realtimeActive)return;
+  if(_realtimeActive){console.log('REALTIME: už aktívny, skip');return;}
   _realtimeActive=true;
 
+  console.log('REALTIME: inicializujem...', SUPABASE_URL);
+
   try{
-    // Oficiálny Supabase JS client
+    if(!window.supabase){
+      console.error('REALTIME: window.supabase nie je dostupný!');
+      _realtimeActive=false;
+      return;
+    }
+
     _supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+    console.log('REALTIME: supabase client vytvorený');
 
     _channel=_supabaseClient
       .channel('zaznam-changes')
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'zaznam'},(payload)=>{
+        console.log('REALTIME PAYLOAD INSERT:', payload);
         const record=payload.new;
         if(!record||allRecords.find(r=>r.id===record.id))return;
         allRecords.unshift(record);
@@ -1249,6 +1258,7 @@ function initRealtime(){
         document.getElementById('dotAI').className='sys-dot';
       })
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'zaznam'},(payload)=>{
+        console.log('REALTIME PAYLOAD UPDATE:', payload);
         const record=payload.new;
         if(!record)return;
         const idx=allRecords.findIndex(r=>r.id===record.id);
@@ -1262,6 +1272,7 @@ function initRealtime(){
         }
       })
       .on('postgres_changes',{event:'DELETE',schema:'public',table:'zaznam'},(payload)=>{
+        console.log('REALTIME PAYLOAD DELETE:', payload);
         const old=payload.old;
         if(!old||!old.id)return;
         if(pendingDelete.find(r=>r.id===old.id))return;
@@ -1273,14 +1284,24 @@ function initRealtime(){
         }
       })
       .subscribe((status)=>{
+        console.log('REALTIME STATUS:', status);
+        const dot=document.getElementById('dotAI');
+        const lbl=document.querySelector('.sys-item:nth-child(2) span:last-child');
         if(status==='SUBSCRIBED'){
-          document.getElementById('dotAI').className='sys-dot';
+          dot.className='sys-dot';
+          if(lbl)lbl.textContent='RT';
         } else if(status==='CLOSED'||status==='CHANNEL_ERROR'){
-          document.getElementById('dotAI').className='sys-dot dim';
+          dot.className='sys-dot err';
+          if(lbl)lbl.textContent='RT!';
+        } else {
+          dot.className='sys-dot dim';
         }
       });
 
+    console.log('REALTIME: channel subscription spustená');
+
   }catch(err){
+    console.error('REALTIME ERROR:', err);
     _realtimeActive=false;
     document.getElementById('dotAI').className='sys-dot dim';
   }
