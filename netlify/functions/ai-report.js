@@ -111,6 +111,7 @@ TÓN A ŠTÝL:
 - Vyvážený: rovnako zdôrazni úspechy aj problémy
 - Konkrétny: žiadne všeobecné frázy, iba fakty a akcie
 - Stručný: každá sekcia max 3–5 bodov
+- Pri komunikačnom hodnotení: podporuj spoluprácu, nekritizuj ľudí osobne, nemoralizuj
 - Jazyk: slovenčina`;
 
   const userPrompt = `${statsBlock}
@@ -153,6 +154,15 @@ Príklad:
 - Workflow: ...
 - AI systém: ...
 - Organizácia projektu: ...)
+
+## 🗣 Komunikačný briefing
+(Vyhodnoť kvalitu komunikácie a workflow na základe záznamov:
+- Bola komunikácia prehľadná alebo vznikal chaos?
+- Sú rozhodnutia jasne zaznamenané?
+- Strácajú sa úlohy alebo sú pod kontrolou?
+- Komunikuje tím efektívne?
+Tón: profesionálny, psychologicky vyvážený, podporujúci spoluprácu — nie kritizujúci ľudí osobne.
+Max 3–4 vety.)
 
 ## 💡 Odporúčanie
 (1–2 vety: jedno konkrétne strategické odporúčanie pre najbližší týždeň)
