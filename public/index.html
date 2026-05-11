@@ -1282,6 +1282,17 @@ function scheduleRender(){
   },300);
 }
 
+function refreshTaskUI(){
+  updateDashboard();
+  if(activeDrawer) renderDrawerContent(activeDrawer.id);
+  const openPanel=document.getElementById('openTasksPanel');
+  if(openPanel&&openPanel.style.display!=='none') renderOpenTasks();
+  const detailPanel=document.getElementById('detailPanel');
+  if(detailPanel&&detailPanel.style.display!=='none'&&currentDetail) openDetail(currentDetail);
+  const hist=document.getElementById('historyPanel');
+  if(hist&&hist.style.display!=='none') renderList();
+}
+
 function initRealtime(){
   if(_realtimeActive){console.log('REALTIME: už aktívny, skip');return;}
   _realtimeActive=true;
@@ -1339,13 +1350,13 @@ function initRealtime(){
         console.log('REALTIME TASK INSERT:', payload);
         const r=payload.new; if(!r)return;
         taskStatusMap[`${r.record_id}__${r.field}__${r.task_index}`]=r.done;
-        scheduleRender();
+        refreshTaskUI();
       })
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'task_status'},(payload)=>{
         console.log('REALTIME TASK UPDATE:', payload);
         const r=payload.new; if(!r)return;
         taskStatusMap[`${r.record_id}__${r.field}__${r.task_index}`]=r.done;
-        scheduleRender();
+        refreshTaskUI();
       })
       .subscribe((status)=>{
         console.log('REALTIME STATUS:', status);
