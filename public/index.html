@@ -13,231 +13,446 @@
   <link rel="apple-touch-icon" href="/icon-192x192.png">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap');
-    :root{--bg:#0a0a0a;--surface:#111111;--border:#222222;--accent:#e8ff00;--accent2:#ff4500;--text:#f0f0f0;--muted:#666666;--danger:#ff4500}
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;min-height:100vh;padding:24px 16px}
-    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
-    .logo{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:22px;color:var(--accent);letter-spacing:-1px}
-    .logo span{color:var(--muted);font-weight:400}
-    .tabs{display:flex;gap:8px;margin-bottom:24px}
-    .tab{padding:10px 20px;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:13px;background:transparent;color:var(--muted);transition:all 0.2s}
-    .tab.active{background:var(--accent);color:#000;border-color:var(--accent)}
-    h2{font-size:13px;font-weight:400;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px}
-    textarea{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:15px;line-height:1.6;padding:16px;border-radius:6px;resize:vertical;min-height:160px;outline:none;transition:border-color 0.2s}
-    textarea:focus{border-color:var(--accent)}
-    textarea::placeholder{color:var(--muted)}
-    .btn-primary{margin-top:16px;width:100%;background:var(--accent);color:#000;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;letter-spacing:1px;border:none;padding:16px;border-radius:6px;cursor:pointer;text-transform:uppercase}
-    .btn-primary:disabled{opacity:0.4;cursor:not-allowed}
-    #status{margin-top:12px;font-size:13px;font-family:'IBM Plex Mono',monospace;color:var(--muted);min-height:20px}
-    #status.error{color:var(--accent2)}
-    #status.ok{color:var(--accent)}
-    #result{margin-top:24px;display:none}
-    .result-grid{display:flex;flex-direction:column;gap:12px}
-    .field{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px 16px}
-    .field-label{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px}
-    .field-value{font-size:14px;line-height:1.6;color:var(--text)}
-    .field-value.empty{color:var(--muted);font-style:italic}
-    .tag-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
-    .tag{background:#1a1a1a;border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-size:13px;font-family:'IBM Plex Mono',monospace}
-    .task-list{display:flex;flex-direction:column;gap:8px;margin-top:4px}
-    .task-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:#1a1a1a;border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:border-color 0.2s;font-size:14px;user-select:none}
-    .task-item:hover{border-color:var(--accent)}
-    .task-item.done{color:var(--muted);text-decoration:line-through}
-    .task-icon{font-size:16px;flex-shrink:0}
-    #historyPanel{display:none}
-    #detailPanel{display:none}
-    #reportPanel{display:none}
-    #openTasksPanel{display:none}
-    .search-box{margin-bottom:12px}
-    .search-box input{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:14px;padding:10px 14px;border-radius:6px;outline:none;transition:border-color 0.2s}
-    .search-box input:focus{border-color:var(--accent)}
-    .search-box input::placeholder{color:var(--muted)}
-    .history-toolbar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
-    .btn-sm{padding:8px 14px;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text);transition:all 0.2s}
-    .btn-sm:hover{border-color:var(--accent)}
-    .btn-danger{background:var(--danger);color:#fff;border-color:var(--danger)}
-    .btn-danger:disabled{opacity:0.3;cursor:not-allowed}
-    .btn-ai{background:transparent;border:1px solid var(--accent);color:var(--accent);font-family:'IBM Plex Mono',monospace;font-size:12px;padding:8px 14px;border-radius:6px;cursor:pointer;transition:all 0.2s}
-    .btn-ai:hover{background:var(--accent);color:#000}
-    .btn-ai:disabled{opacity:0.4;cursor:not-allowed}
-    .btn-tasks{background:transparent;border:1px solid var(--danger);color:var(--danger);font-family:'IBM Plex Mono',monospace;font-size:12px;padding:8px 14px;border-radius:6px;cursor:pointer;transition:all 0.2s}
-    .btn-tasks:hover{background:var(--danger);color:#fff}
-    .btn-edit{background:transparent;border:1px solid var(--muted);color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:12px;padding:8px 14px;border-radius:6px;cursor:pointer;transition:all 0.2s}
-    .btn-edit:hover{border-color:var(--accent);color:var(--accent)}
-    .selected-count{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);margin-left:auto}
-    .zaznam-item{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px 16px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start;transition:border-color 0.2s;cursor:pointer;user-select:none;min-width:0;overflow:hidden}
-    .zaznam-item.selected{border-color:var(--accent)}
-    .zaznam-check{width:18px;height:18px;border:2px solid var(--border);border-radius:4px;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;transition:all 0.2s}
-    .zaznam-item.selected .zaznam-check{background:var(--accent);border-color:var(--accent)}
-    .zaznam-check::after{content:'✓';font-size:11px;color:#000;display:none}
-    .zaznam-item.selected .zaznam-check::after{display:block}
-    .zaznam-body{flex:1;min-width:0;overflow:hidden}
-    .zaznam-date{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);margin-bottom:4px}
-    .zaznam-title{font-size:14px;color:var(--text);margin-bottom:4px;overflow-wrap:anywhere;word-break:break-word;white-space:normal}
-    .zaznam-sub{font-size:12px;color:var(--muted);overflow-wrap:anywhere;word-break:break-word;white-space:normal}
-    .zaznam-ulozene{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-top:4px}
-    .zaznam-delete{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:4px;border-radius:4px;transition:color 0.2s;flex-shrink:0}
-    .zaznam-delete:hover{color:var(--danger)}
-    .no-records{text-align:center;padding:40px;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:13px}
-    .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;border:1px solid var(--accent);color:var(--text);padding:12px 20px;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:13px;display:flex;gap:12px;align-items:center;z-index:999;opacity:0;transition:opacity 0.3s;pointer-events:none}
-    .toast.show{opacity:1;pointer-events:auto}
-    .toast-undo{background:none;border:none;color:var(--accent);cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:13px;text-decoration:underline}
-    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;display:none;align-items:center;justify-content:center;padding:20px}
-    .modal-overlay.show{display:flex}
-    .modal{background:#1a1a1a;border:1px solid var(--border);border-radius:8px;padding:24px;max-width:400px;width:100%}
-    .modal h3{font-family:'IBM Plex Mono',monospace;font-size:16px;margin-bottom:12px}
-    .modal p{font-size:14px;color:var(--muted);margin-bottom:20px;line-height:1.5}
-    .modal-btns{display:flex;gap:8px;justify-content:flex-end}
-    .btn-cancel{padding:10px 20px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text);cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:13px}
-    .btn-confirm-delete{padding:10px 20px;border:none;border-radius:6px;background:var(--danger);color:#fff;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:13px}
-    .detail-actions{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
-    .detail-header{background:var(--surface);border:1px solid var(--accent);border-radius:8px;padding:16px 20px;margin-bottom:16px}
-    .detail-date{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);margin-bottom:4px}
-    .detail-ulozene{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:6px}
-    .detail-title{font-size:18px;font-weight:600;color:var(--text);line-height:1.4}
-    .report-actions{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
-    .report-header{background:var(--surface);border:1px solid var(--accent);border-radius:8px;padding:14px 18px;margin-bottom:16px}
-    .report-header-title{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--accent);display:block;margin-bottom:4px}
-    .report-header-sub{font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace}
-    .report-body{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px;line-height:1.8;font-size:14px;white-space:pre-wrap;color:var(--text)}
-    .report-body h2{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);margin:16px 0 6px;letter-spacing:1px}
-    .report-body h2:first-child{margin-top:0}
-    .report-loading{text-align:center;padding:40px;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:13px}
-    .report-loading .spinner{display:inline-block;width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:12px}
-    @keyframes spin{to{transform:rotate(360deg)}}
-    .open-tasks-header{background:var(--surface);border:1px solid var(--danger);border-radius:8px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
-    .open-tasks-title{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--danger)}
-    .open-tasks-count{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)}
-    .open-task-item{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px 14px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start;cursor:pointer;transition:border-color 0.2s;user-select:none;min-width:0;overflow:hidden}
-    .open-task-item:hover{border-color:var(--danger)}
-    .open-task-icon{font-size:16px;flex-shrink:0;margin-top:2px}
-    .open-task-body{flex:1;min-width:0}
-    .open-task-text{font-size:14px;color:var(--text);margin-bottom:4px;overflow-wrap:anywhere;word-break:break-word}
-    .open-task-meta{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);display:flex;flex-wrap:wrap;gap:8px;margin-bottom:2px}
-    .open-task-kto{font-family:'IBM Plex Mono',monospace;font-size:11px;padding:2px 7px;border-radius:3px;background:#1a1a1a;border:1px solid var(--border)}
-    .open-task-kto.staubert{color:#e8ff00;border-color:#3a3a00}
-    .open-task-kto.szabo{color:#ff9944;border-color:#3a2000}
-    .open-task-zaznam{font-size:12px;color:var(--muted);margin-top:2px;overflow-wrap:anywhere;word-break:break-word}
-    .open-task-item.hotove{opacity:0.4;pointer-events:none}
-    .edit-form{display:flex;flex-direction:column;gap:14px}
-    .edit-field{display:flex;flex-direction:column;gap:6px}
-    .edit-label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:2px}
-    .edit-input{background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:14px;padding:10px 12px;border-radius:6px;outline:none;transition:border-color 0.2s;width:100%}
-    .edit-input:focus{border-color:var(--accent)}
-    .edit-textarea{background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:14px;padding:10px 12px;border-radius:6px;outline:none;transition:border-color 0.2s;width:100%;resize:vertical;min-height:80px;line-height:1.6}
-    .edit-textarea:focus{border-color:var(--accent)}
-    .edit-hint{font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace}
-    .edit-actions{display:flex;gap:10px;padding-top:8px;align-items:center;flex-wrap:wrap}
-    .btn-save{background:var(--accent);color:#000;border:none;padding:10px 24px;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;cursor:pointer;transition:opacity 0.2s}
-    .btn-save:disabled{opacity:0.4;cursor:not-allowed}
-    .edit-status{font-size:12px;font-family:'IBM Plex Mono',monospace;color:var(--muted)}
-    .edit-status.ok{color:var(--accent)}
-    .edit-status.error{color:var(--danger)}
+
+    :root {
+      --bg: #080808;
+      --surface: #101010;
+      --surface2: #161616;
+      --border: #1e1e1e;
+      --accent: #e8ff00;
+      --accent-dim: rgba(232,255,0,.08);
+      --text: #f0f0f0;
+      --muted: #555;
+      --muted2: #333;
+      --danger: #ff4500;
+      --danger-dim: rgba(255,69,0,.1);
+      --st: #f5a623;
+      --st-dim: rgba(245,166,35,.1);
+      --st-border: rgba(245,166,35,.25);
+      --sz: #00c2ff;
+      --sz-dim: rgba(0,194,255,.08);
+      --sz-border: rgba(0,194,255,.22);
+      --ok: #00cc88;
+      --ok-dim: rgba(0,204,136,.08);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'IBM Plex Sans', sans-serif; min-height: 100vh; }
+
+    /* ─── HEADER ─── */
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .logo { font-family: 'IBM Plex Mono', monospace; font-size: 17px; font-weight: 600; color: var(--accent); letter-spacing: -0.5px; }
+    .logo em { color: var(--muted); font-style: normal; font-weight: 400; }
+    .sys-row { display: flex; gap: 14px; align-items: center; }
+    .sys-item { display: flex; align-items: center; gap: 5px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); }
+    .sys-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 6px var(--ok); flex-shrink: 0; }
+    .sys-dot.err { background: var(--danger); box-shadow: 0 0 6px var(--danger); }
+    .sys-dot.dim { background: var(--muted2); box-shadow: none; }
+
+    /* ─── MAIN LAYOUT ─── */
+    .page { padding: 20px; max-width: 900px; margin: 0 auto; }
+
+    /* ─── TABS ─── */
+    .tabs { display: flex; gap: 6px; margin-bottom: 20px; }
+    .tab { padding: 8px 16px; border: 1px solid var(--border); border-radius: 5px; cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.5px; background: transparent; color: var(--muted); transition: all .15s; text-transform: uppercase; }
+    .tab.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; }
+
+    /* ─── DASHBOARD ─── */
+    #dashboardPanel { display: block; }
+
+    .dash-section-label {
+      font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; margin-top: 4px;
+    }
+
+    /* Row 1: 3 main cards */
+    .dash-row1 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    @media (max-width: 600px) { .dash-row1 { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 380px) { .dash-row1 { grid-template-columns: 1fr; } }
+
+    /* Row 2: person cards + system */
+    .dash-row2 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+    @media (max-width: 600px) { .dash-row2 { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 380px) { .dash-row2 { grid-template-columns: 1fr; } }
+
+    /* Card base */
+    .dcard {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+      padding: 16px 16px 14px; position: relative; overflow: hidden; transition: border-color .2s;
+    }
+    .dcard:hover { border-color: #2a2a2a; }
+    .dcard::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: transparent; border-radius: 10px 10px 0 0;
+    }
+    .dcard.accent::before { background: var(--accent); }
+    .dcard.danger::before { background: var(--danger); }
+    .dcard.staubert::before { background: var(--st); }
+    .dcard.szabo::before { background: var(--sz); }
+    .dcard.ok::before { background: var(--ok); }
+
+    .dcard-icon { font-size: 20px; margin-bottom: 10px; display: block; line-height: 1; }
+    .dcard-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; }
+    .dcard-value { font-family: 'IBM Plex Mono', monospace; font-size: 28px; font-weight: 600; line-height: 1; margin-bottom: 8px; color: var(--text); }
+    .dcard-value.accent { color: var(--accent); text-shadow: 0 0 20px rgba(232,255,0,.3); }
+    .dcard-value.danger { color: var(--danger); text-shadow: 0 0 20px rgba(255,69,0,.3); }
+    .dcard-value.ok { color: var(--ok); }
+    .dcard-value.muted { color: var(--muted); font-size: 20px; }
+    .dcard-sub { font-size: 11px; color: var(--muted); line-height: 1.5; }
+    .dcard-sub b { color: var(--text); font-weight: 400; }
+
+    /* Person split bar */
+    .split-bar { display: flex; gap: 4px; margin-top: 10px; height: 3px; border-radius: 2px; overflow: hidden; }
+    .split-bar-st { background: var(--st); border-radius: 2px; transition: width .5s; }
+    .split-bar-sz { background: var(--sz); border-radius: 2px; flex: 1; transition: width .5s; }
+
+    /* Person cards */
+    .dcard.person-st { background: var(--st-dim); border-color: var(--st-border); }
+    .dcard.person-st .dcard-value { color: var(--st); text-shadow: 0 0 20px rgba(245,166,35,.25); }
+    .dcard.person-st .dcard-label { color: var(--st); opacity: .7; }
+    .dcard.person-sz { background: var(--sz-dim); border-color: var(--sz-border); }
+    .dcard.person-sz .dcard-value { color: var(--sz); text-shadow: 0 0 20px rgba(0,194,255,.2); }
+    .dcard.person-sz .dcard-label { color: var(--sz); opacity: .7; }
+
+    /* System card */
+    .sys-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+    .sys-card-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; }
+    .sys-lines { display: flex; flex-direction: column; gap: 8px; }
+    .sys-line { display: flex; align-items: center; justify-content: space-between; }
+    .sys-line-name { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); }
+    .sys-line-val { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; }
+    .sys-line-val.ok { color: var(--ok); }
+    .sys-line-val.err { color: var(--danger); }
+    .sys-line-val.dim { color: var(--muted); }
+
+    /* ─── FORMS ─── */
+    h2 { font-size: 11px; font-weight: 400; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px; }
+    textarea { width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--text); font-family: 'IBM Plex Sans', sans-serif; font-size: 15px; line-height: 1.6; padding: 16px; border-radius: 8px; resize: vertical; min-height: 160px; outline: none; transition: border-color .2s; }
+    textarea:focus { border-color: var(--accent); }
+    textarea::placeholder { color: var(--muted); }
+    .btn-primary { margin-top: 14px; width: 100%; background: var(--accent); color: #000; font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 13px; letter-spacing: 1px; border: none; padding: 15px; border-radius: 8px; cursor: pointer; text-transform: uppercase; transition: opacity .15s; }
+    .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+    #status { margin-top: 12px; font-size: 12px; font-family: 'IBM Plex Mono', monospace; color: var(--muted); min-height: 20px; }
+    #status.error { color: var(--danger); }
+    #status.ok { color: var(--accent); }
+    #result { margin-top: 20px; display: none; }
+    .result-grid { display: flex; flex-direction: column; gap: 10px; }
+    .field { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+    .field-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
+    .field-label.st { color: var(--st); }
+    .field-label.sz { color: var(--sz); }
+    .field-value { font-size: 14px; line-height: 1.6; color: var(--text); overflow-wrap: anywhere; word-break: break-word; }
+    .field-value.empty { color: var(--muted); font-style: italic; }
+    .tag-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+    .tag { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 4px 10px; font-size: 12px; font-family: 'IBM Plex Mono', monospace; overflow-wrap: anywhere; }
+    .task-list { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+    .task-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; transition: all .15s; font-size: 13px; user-select: none; overflow-wrap: anywhere; word-break: break-word; }
+    .task-item:hover { border-color: #333; }
+    .task-item.done { color: var(--muted); text-decoration: line-through; }
+    .task-item.st-task { border-left: 2px solid var(--st); }
+    .task-item.sz-task { border-left: 2px solid var(--sz); }
+    .task-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+
+    /* ─── HISTORY ─── */
+    #historyPanel, #detailPanel, #reportPanel, #openTasksPanel { display: none; }
+    .search-box { margin-bottom: 10px; }
+    .search-box input { width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--text); font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; padding: 10px 14px; border-radius: 8px; outline: none; transition: border-color .2s; }
+    .search-box input:focus { border-color: var(--accent); }
+    .search-box input::placeholder { color: var(--muted); }
+    .history-toolbar { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
+    .btn-sm { padding: 7px 13px; border-radius: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; cursor: pointer; border: 1px solid var(--border); background: var(--surface); color: var(--text); transition: all .15s; }
+    .btn-sm:hover { border-color: #444; }
+    .btn-danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+    .btn-danger:disabled { opacity: .3; cursor: not-allowed; }
+    .btn-ai { background: transparent; border: 1px solid var(--accent); color: var(--accent); font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 7px 13px; border-radius: 6px; cursor: pointer; transition: all .15s; }
+    .btn-ai:hover { background: var(--accent); color: #000; }
+    .btn-ai:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-tasks { background: transparent; border: 1px solid rgba(255,69,0,.4); color: var(--danger); font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 7px 13px; border-radius: 6px; cursor: pointer; transition: all .15s; }
+    .btn-tasks:hover { background: var(--danger); color: #fff; }
+    .btn-edit { background: transparent; border: 1px solid var(--border); color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 7px 13px; border-radius: 6px; cursor: pointer; transition: all .15s; }
+    .btn-edit:hover { border-color: var(--accent); color: var(--accent); }
+    .selected-count { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); margin-left: auto; }
+    .zaznam-item { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 8px; display: flex; gap: 12px; align-items: flex-start; transition: border-color .15s; cursor: pointer; user-select: none; min-width: 0; overflow: hidden; }
+    .zaznam-item:hover { border-color: #2a2a2a; }
+    .zaznam-item.selected { border-color: var(--accent); }
+    .zaznam-check { width: 16px; height: 16px; border: 1px solid var(--border); border-radius: 3px; flex-shrink: 0; margin-top: 3px; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+    .zaznam-item.selected .zaznam-check { background: var(--accent); border-color: var(--accent); }
+    .zaznam-check::after { content: '✓'; font-size: 10px; color: #000; display: none; }
+    .zaznam-item.selected .zaznam-check::after { display: block; }
+    .zaznam-body { flex: 1; min-width: 0; overflow: hidden; }
+    .zaznam-date { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--accent); margin-bottom: 3px; }
+    .zaznam-title { font-size: 13px; color: var(--text); margin-bottom: 3px; overflow-wrap: anywhere; word-break: break-word; }
+    .zaznam-sub { font-size: 11px; color: var(--muted); overflow-wrap: anywhere; word-break: break-word; }
+    .zaznam-pills { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+    .pill { font-family: 'IBM Plex Mono', monospace; font-size: 9px; padding: 2px 6px; border-radius: 3px; letter-spacing: .5px; text-transform: uppercase; }
+    .pill.st { background: var(--st-dim); color: var(--st); border: 1px solid var(--st-border); }
+    .pill.sz { background: var(--sz-dim); color: var(--sz); border: 1px solid var(--sz-border); }
+    .pill.prob { background: var(--danger-dim); color: var(--danger); border: 1px solid rgba(255,69,0,.25); }
+    .zaznam-ulozene { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted2); margin-top: 4px; }
+    .zaznam-delete { background: none; border: none; color: var(--muted2); cursor: pointer; font-size: 14px; padding: 4px; border-radius: 4px; transition: color .15s; flex-shrink: 0; }
+    .zaznam-delete:hover { color: var(--danger); }
+    .no-records { text-align: center; padding: 40px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+
+    /* ─── DETAIL ─── */
+    .detail-actions { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+    .detail-header { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; margin-bottom: 14px; border-top: 2px solid var(--accent); }
+    .detail-date { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--accent); margin-bottom: 3px; }
+    .detail-ulozene { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); margin-bottom: 8px; }
+    .detail-title { font-size: 16px; font-weight: 600; color: var(--text); line-height: 1.4; overflow-wrap: anywhere; word-break: break-word; }
+
+    /* ─── REPORT ─── */
+    .report-actions { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+    .report-header { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 14px; border-top: 2px solid var(--accent); }
+    .report-header-title { font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--accent); display: block; margin-bottom: 3px; }
+    .report-header-sub { font-size: 11px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; }
+    .report-body { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; line-height: 1.8; font-size: 13px; white-space: pre-wrap; color: var(--text); overflow-wrap: anywhere; word-break: break-word; }
+    .report-body h2 { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--accent); margin: 16px 0 6px; letter-spacing: 1px; }
+    .report-body h2:first-child { margin-top: 0; }
+    .report-loading { text-align: center; padding: 40px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+    .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; margin-bottom: 10px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── OPEN TASKS ─── */
+    .open-tasks-header { background: var(--surface); border: 1px solid rgba(255,69,0,.25); border-radius: 8px; padding: 12px 16px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; }
+    .open-tasks-title { font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--danger); }
+    .open-tasks-count { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); }
+    .open-task-item { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; margin-bottom: 8px; display: flex; gap: 10px; align-items: flex-start; cursor: pointer; transition: border-color .15s; user-select: none; min-width: 0; overflow: hidden; }
+    .open-task-item.st-task { border-left: 3px solid var(--st); }
+    .open-task-item.sz-task { border-left: 3px solid var(--sz); }
+    .open-task-item:hover { border-color: #2a2a2a; }
+    .open-task-icon { font-size: 14px; flex-shrink: 0; margin-top: 2px; }
+    .open-task-body { flex: 1; min-width: 0; }
+    .open-task-text { font-size: 13px; color: var(--text); margin-bottom: 4px; overflow-wrap: anywhere; word-break: break-word; }
+    .open-task-meta { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2px; }
+    .open-task-kto { font-family: 'IBM Plex Mono', monospace; font-size: 10px; padding: 2px 7px; border-radius: 3px; }
+    .open-task-kto.staubert { color: var(--st); background: var(--st-dim); border: 1px solid var(--st-border); }
+    .open-task-kto.szabo { color: var(--sz); background: var(--sz-dim); border: 1px solid var(--sz-border); }
+    .open-task-zaznam { font-size: 11px; color: var(--muted); margin-top: 2px; overflow-wrap: anywhere; word-break: break-word; }
+    .open-task-item.hotove { opacity: .4; pointer-events: none; }
+
+    /* ─── EDIT FORM ─── */
+    .edit-form { display: flex; flex-direction: column; gap: 12px; }
+    .edit-field { display: flex; flex-direction: column; gap: 5px; }
+    .edit-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; }
+    .edit-label.st { color: var(--st); }
+    .edit-label.sz { color: var(--sz); }
+    .edit-input, .edit-textarea { background: var(--surface); border: 1px solid var(--border); color: var(--text); font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; padding: 9px 12px; border-radius: 6px; outline: none; transition: border-color .15s; width: 100%; }
+    .edit-input:focus, .edit-textarea:focus { border-color: var(--accent); }
+    .edit-textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
+    .edit-textarea.st:focus { border-color: var(--st); }
+    .edit-textarea.sz:focus { border-color: var(--sz); }
+    .edit-hint { font-size: 10px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; }
+    .edit-actions { display: flex; gap: 8px; padding-top: 6px; align-items: center; flex-wrap: wrap; }
+    .btn-save { background: var(--accent); color: #000; border: none; padding: 9px 22px; border-radius: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; cursor: pointer; }
+    .btn-save:disabled { opacity: .4; cursor: not-allowed; }
+    .edit-status { font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: var(--muted); }
+    .edit-status.ok { color: var(--ok); }
+    .edit-status.error { color: var(--danger); }
+
+    /* ─── TOAST / MODAL ─── */
+    .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1a1a1a; border: 1px solid var(--accent); color: var(--text); padding: 11px 18px; border-radius: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; display: flex; gap: 12px; align-items: center; z-index: 999; opacity: 0; transition: opacity .3s; pointer-events: none; white-space: nowrap; }
+    .toast.show { opacity: 1; pointer-events: auto; }
+    .toast-undo { background: none; border: none; color: var(--accent); cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 12px; text-decoration: underline; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 100; display: none; align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: #141414; border: 1px solid var(--border); border-radius: 10px; padding: 22px; max-width: 380px; width: 100%; }
+    .modal h3 { font-family: 'IBM Plex Mono', monospace; font-size: 14px; margin-bottom: 10px; }
+    .modal p { font-size: 13px; color: var(--muted); margin-bottom: 18px; line-height: 1.5; }
+    .modal-btns { display: flex; gap: 8px; justify-content: flex-end; }
+    .btn-cancel { padding: 9px 18px; border: 1px solid var(--border); border-radius: 6px; background: transparent; color: var(--text); cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+    .btn-confirm-delete { padding: 9px 18px; border: none; border-radius: 6px; background: var(--danger); color: #fff; cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
   </style>
 </head>
 <body>
-<header>
-  <div class="logo">STRIKER<span> / Riadiace centrum</span></div>
-</header>
-<div class="tabs">
-  <button class="tab active" onclick="showTab('new',this)">⚡ Nový vstup</button>
-  <button class="tab" onclick="showTab('history',this)">📋 História</button>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">STRIKER <em>/ Riadiace centrum</em></div>
+  <div class="sys-row">
+    <div class="sys-item"><span class="sys-dot" id="dotDB"></span><span id="lblDB">DB</span></div>
+    <div class="sys-item"><span class="sys-dot dim" id="dotAI"></span><span>AI</span></div>
+    <div class="sys-item"><span class="sys-dot dim" id="dotPWA"></span><span>PWA</span></div>
+  </div>
 </div>
 
-<div id="newPanel">
-  <h2>Vložiť pracovný záznam</h2>
-  <textarea id="inputText" placeholder="Vlož text z WhatsApp / hovoru / porady..."></textarea>
-  <button class="btn-primary" id="btn" onclick="spracovat()">⚡ Spracovať vstup</button>
-  <div id="status"></div>
-  <div id="result"><div class="result-grid" id="resultGrid"></div></div>
-</div>
+<div class="page">
 
-<div id="historyPanel">
-  <div class="search-box">
-    <input type="text" id="searchInput" placeholder="🔍 Hľadať v histórii..." oninput="renderList()"/>
+  <!-- TABS -->
+  <div class="tabs" style="margin-top:16px">
+    <button class="tab active" onclick="showTab('dashboard',this)">⬛ Dashboard</button>
+    <button class="tab" onclick="showTab('new',this)">⚡ Nový vstup</button>
+    <button class="tab" onclick="showTab('history',this)">📋 História</button>
   </div>
-  <div class="history-toolbar">
-    <button class="btn-sm" onclick="toggleSelectAll()" id="btnSelectAll">Označiť všetko</button>
-    <button class="btn-sm btn-danger" id="btnDeleteSelected" onclick="deleteSelected()" disabled>🗑 Vymazať označené (0)</button>
-    <button class="btn-tasks" onclick="showOpenTasks()">❌ Otvorené úlohy</button>
-    <button class="btn-ai" id="btnAiReport" onclick="createAiReport()">🧠 AI report</button>
-    <span class="selected-count" id="selectedCount"></span>
-  </div>
-  <div id="recordsList"></div>
-</div>
 
-<div id="detailPanel">
-  <div class="detail-actions">
-    <button class="btn-sm" onclick="goBack()">⬅ Späť do histórie</button>
-    <button class="btn-sm" onclick="copyDetail()">📋 Kopírovať záznam</button>
-    <button class="btn-edit" id="btnEdit" onclick="toggleEditMode()">✏️ Upraviť záznam</button>
-  </div>
-  <div class="detail-header" id="detailHeader"></div>
-  <div class="result-grid" id="detailGrid"></div>
-  <div id="editForm" style="display:none">
-    <div class="edit-form">
-      <div class="edit-field">
-        <label class="edit-label">Dátum</label>
-        <input type="date" class="edit-input" id="edit-datum"/>
+  <!-- ── DASHBOARD ── -->
+  <div id="dashboardPanel">
+    <div class="dash-section-label">Operačný prehľad</div>
+
+    <!-- Row 1 -->
+    <div class="dash-row1">
+      <!-- Otvorené úlohy -->
+      <div class="dcard accent" style="cursor:pointer" onclick="showOpenTasksFromDash()">
+        <span class="dcard-icon">❌</span>
+        <div class="dcard-label">Otvorené úlohy</div>
+        <div class="dcard-value accent" id="dOpenTotal">–</div>
+        <div class="dcard-sub" id="dOpenSub">načítavam...</div>
+        <div class="split-bar">
+          <div class="split-bar-st" id="dSplitSt" style="width:50%"></div>
+          <div class="split-bar-sz" id="dSplitSz" style="width:50%"></div>
+        </div>
       </div>
-      <div class="edit-field">
-        <label class="edit-label">Čo sa riešilo</label>
-        <textarea class="edit-textarea" id="edit-co_sa_riesilo" rows="3"></textarea>
+
+      <!-- Kritické body -->
+      <div class="dcard danger" id="dCardCrit">
+        <span class="dcard-icon">⚠️</span>
+        <div class="dcard-label">Kritické body</div>
+        <div class="dcard-value" id="dCritVal" style="color:var(--danger)">–</div>
+        <div class="dcard-sub" id="dCritSub">záznamy s problémom</div>
       </div>
-      <div class="edit-field">
-        <label class="edit-label">Výsledok</label>
-        <textarea class="edit-textarea" id="edit-vysledok" rows="3"></textarea>
+
+      <!-- Dnešná aktivita -->
+      <div class="dcard">
+        <span class="dcard-icon">📅</span>
+        <div class="dcard-label">Dnes</div>
+        <div class="dcard-value" id="dTodayVal" style="color:var(--ok)">–</div>
+        <div class="dcard-sub" id="dTodaySub">–</div>
       </div>
-      <div class="edit-field">
-        <label class="edit-label">Problém</label>
-        <textarea class="edit-textarea" id="edit-problem" rows="2"></textarea>
+    </div>
+
+    <!-- Row 2 -->
+    <div class="dash-row2">
+      <!-- Staubert -->
+      <div class="dcard person-st staubert">
+        <span class="dcard-icon">👤</span>
+        <div class="dcard-label">Staubert</div>
+        <div class="dcard-value" id="dStVal">–</div>
+        <div class="dcard-sub" id="dStSub">otvorených úloh</div>
       </div>
-      <div class="edit-field">
-        <label class="edit-label">Úlohy – Staubert</label>
-        <textarea class="edit-textarea" id="edit-ulohy_staubert" rows="4"></textarea>
-        <span class="edit-hint">Každá úloha na nový riadok</span>
+
+      <!-- Szabó -->
+      <div class="dcard person-sz szabo">
+        <span class="dcard-icon">👤</span>
+        <div class="dcard-label">Szabó</div>
+        <div class="dcard-value" id="dSzVal">–</div>
+        <div class="dcard-sub" id="dSzSub">otvorených úloh</div>
       </div>
-      <div class="edit-field">
-        <label class="edit-label">Úlohy – Szabó</label>
-        <textarea class="edit-textarea" id="edit-ulohy_szabo" rows="4"></textarea>
-        <span class="edit-hint">Každá úloha na nový riadok</span>
+
+      <!-- Stav systému -->
+      <div class="sys-card ok">
+        <div class="sys-card-label">⚡ Stav systému</div>
+        <div class="sys-lines">
+          <div class="sys-line">
+            <span class="sys-line-name">Supabase</span>
+            <span class="sys-line-val ok" id="sysDB">–</span>
+          </div>
+          <div class="sys-line">
+            <span class="sys-line-name">AI Claude</span>
+            <span class="sys-line-val ok" id="sysAI">OK</span>
+          </div>
+          <div class="sys-line">
+            <span class="sys-line-name">PWA</span>
+            <span class="sys-line-val" id="sysPWA">–</span>
+          </div>
+          <div class="sys-line">
+            <span class="sys-line-name">Záznamy</span>
+            <span class="sys-line-val ok" id="sysTotal">–</span>
+          </div>
+        </div>
       </div>
-      <div class="edit-field">
-        <label class="edit-label">Ďalší krok</label>
-        <textarea class="edit-textarea" id="edit-dalsi_krok" rows="2"></textarea>
-      </div>
-      <div class="edit-actions">
-        <button class="btn-save" id="btnSave" onclick="saveEdit()">💾 Uložiť zmeny</button>
-        <button class="btn-sm" onclick="cancelEdit()">Zrušiť</button>
-        <span class="edit-status" id="editStatus"></span>
+    </div>
+
+    <!-- AI Report row -->
+    <div class="dcard" style="margin-bottom:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <div>
+          <div class="dcard-label" style="margin-bottom:4px">🧠 Posledný AI report</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text)" id="dReportVal">Nebol generovaný</div>
+          <div class="dcard-sub" id="dReportSub" style="margin-top:3px">–</div>
+        </div>
+        <button class="btn-ai" onclick="showTab('history',document.querySelectorAll('.tab')[2]);setTimeout(createAiReport,100)">🧠 Generovať report</button>
       </div>
     </div>
   </div>
-</div>
 
-<div id="reportPanel">
-  <div class="report-actions">
-    <button class="btn-sm" onclick="goBackFromReport()">⬅ Späť do histórie</button>
-    <button class="btn-sm" onclick="copyReport()">📋 Kopírovať report</button>
+  <!-- ── NEW ── -->
+  <div id="newPanel" style="display:none">
+    <h2>Vložiť pracovný záznam</h2>
+    <textarea id="inputText" placeholder="Vlož text z WhatsApp / hovoru / porady..."></textarea>
+    <button class="btn-primary" id="btn" onclick="spracovat()">⚡ Spracovať vstup</button>
+    <div id="status"></div>
+    <div id="result"><div class="result-grid" id="resultGrid"></div></div>
   </div>
-  <div class="report-header">
-    <span class="report-header-title">🧠 AI Denný report</span>
-    <span class="report-header-sub" id="reportMeta"></span>
-  </div>
-  <div class="report-body" id="reportBody"></div>
-</div>
 
-<div id="openTasksPanel">
-  <div class="detail-actions">
-    <button class="btn-sm" onclick="goBackFromOpenTasks()">⬅ Späť do histórie</button>
+  <!-- ── HISTORY ── -->
+  <div id="historyPanel">
+    <div class="search-box"><input type="text" id="searchInput" placeholder="🔍 Hľadať..." oninput="renderList()"/></div>
+    <div class="history-toolbar">
+      <button class="btn-sm" onclick="toggleSelectAll()" id="btnSelectAll">Označiť</button>
+      <button class="btn-sm btn-danger" id="btnDeleteSelected" onclick="deleteSelected()" disabled>🗑 Vymazať (0)</button>
+      <button class="btn-tasks" onclick="showOpenTasks()">❌ Úlohy</button>
+      <button class="btn-ai" id="btnAiReport" onclick="createAiReport()">🧠 AI report</button>
+      <span class="selected-count" id="selectedCount"></span>
+    </div>
+    <div id="recordsList"></div>
   </div>
-  <div class="open-tasks-header">
-    <span class="open-tasks-title">❌ Otvorené úlohy</span>
-    <span class="open-tasks-count" id="openTasksCount"></span>
-  </div>
-  <div id="openTasksList"></div>
-</div>
 
+  <!-- ── DETAIL ── -->
+  <div id="detailPanel">
+    <div class="detail-actions">
+      <button class="btn-sm" onclick="goBack()">⬅ Späť</button>
+      <button class="btn-sm" onclick="copyDetail()">📋 Kopírovať</button>
+      <button class="btn-edit" id="btnEdit" onclick="toggleEditMode()">✏️ Upraviť</button>
+    </div>
+    <div class="detail-header" id="detailHeader"></div>
+    <div class="result-grid" id="detailGrid"></div>
+    <div id="editForm" style="display:none">
+      <div class="edit-form">
+        <div class="edit-field"><label class="edit-label">Dátum</label><input type="date" class="edit-input" id="edit-datum"/></div>
+        <div class="edit-field"><label class="edit-label">Čo sa riešilo</label><textarea class="edit-textarea" id="edit-co_sa_riesilo" rows="3"></textarea></div>
+        <div class="edit-field"><label class="edit-label">Výsledok</label><textarea class="edit-textarea" id="edit-vysledok" rows="3"></textarea></div>
+        <div class="edit-field"><label class="edit-label">Problém</label><textarea class="edit-textarea" id="edit-problem" rows="2"></textarea></div>
+        <div class="edit-field"><label class="edit-label st">Úlohy – Staubert</label><textarea class="edit-textarea st" id="edit-ulohy_staubert" rows="4"></textarea><span class="edit-hint">Každá úloha na nový riadok</span></div>
+        <div class="edit-field"><label class="edit-label sz">Úlohy – Szabó</label><textarea class="edit-textarea sz" id="edit-ulohy_szabo" rows="4"></textarea><span class="edit-hint">Každá úloha na nový riadok</span></div>
+        <div class="edit-field"><label class="edit-label">Ďalší krok</label><textarea class="edit-textarea" id="edit-dalsi_krok" rows="2"></textarea></div>
+        <div class="edit-actions">
+          <button class="btn-save" id="btnSave" onclick="saveEdit()">💾 Uložiť</button>
+          <button class="btn-sm" onclick="cancelEdit()">Zrušiť</button>
+          <span class="edit-status" id="editStatus"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── REPORT ── -->
+  <div id="reportPanel">
+    <div class="report-actions">
+      <button class="btn-sm" onclick="goBackFromReport()">⬅ Späť</button>
+      <button class="btn-sm" onclick="copyReport()">📋 Kopírovať</button>
+    </div>
+    <div class="report-header">
+      <span class="report-header-title">🧠 AI Denný report</span>
+      <span class="report-header-sub" id="reportMeta"></span>
+    </div>
+    <div class="report-body" id="reportBody"></div>
+  </div>
+
+  <!-- ── OPEN TASKS ── -->
+  <div id="openTasksPanel">
+    <div class="detail-actions"><button class="btn-sm" onclick="goBackFromOpenTasks()">⬅ Späť</button></div>
+    <div class="open-tasks-header">
+      <span class="open-tasks-title">❌ Otvorené úlohy</span>
+      <span class="open-tasks-count" id="openTasksCount"></span>
+    </div>
+    <div id="openTasksList"></div>
+  </div>
+
+</div><!-- /page -->
+
+<!-- MODAL -->
 <div class="modal-overlay" id="modal">
   <div class="modal">
     <h3>Potvrdiť vymazanie</h3>
@@ -256,140 +471,145 @@
 <script>
 const SUPABASE_URL='https://jjvegnwqipmcipwvdjje.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpqdmVnbndxaXBtY2lwd3ZkamplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTczMTYsImV4cCI6MjA5MzM5MzMxNn0.Jizw9XYzoGlo6teVuo6POx0zybcLjGNwrKGhtTmWXZo';
-let allRecords=[],selectedIds=new Set(),pendingDelete=[],toastTimer=null,deleteCallback=null,currentDetail=null,lastReport='',lastReportMeta='';
+let allRecords=[],selectedIds=new Set(),pendingDelete=[],toastTimer=null,deleteCallback=null,currentDetail=null,lastReport='',lastReportMeta='',lastReportTime=null;
 
 const LS_KEY='striker_task_status';
-function getTaskDone(recordId,field,index){
-  try{const store=JSON.parse(localStorage.getItem(LS_KEY)||'{}');return store[`${recordId}__${field}__${index}`]===true;}catch(e){return false;}
-}
-function setTaskDone(recordId,field,index,done){
-  try{const store=JSON.parse(localStorage.getItem(LS_KEY)||'{}');store[`${recordId}__${field}__${index}`]=done;localStorage.setItem(LS_KEY,JSON.stringify(store));}catch(e){}
-}
-function formatDatumCas(isoString){
-  if(!isoString)return'—';
-  try{
-    const d=new Date(isoString);
-    const den=String(d.getDate()).padStart(2,'0');
-    const mes=String(d.getMonth()+1).padStart(2,'0');
-    const rok=d.getFullYear();
-    const hod=String(d.getHours()).padStart(2,'0');
-    const min=String(d.getMinutes()).padStart(2,'0');
-    return`${den}.${mes}.${rok} – ${hod}:${min}`;
-  }catch(e){return'—';}
-}
-function formatTeraz(){return formatDatumCas(new Date().toISOString());}
-function hideAllPanels(){
-  ['newPanel','historyPanel','detailPanel','reportPanel','openTasksPanel'].forEach(id=>{
-    document.getElementById(id).style.display='none';
+function getTaskDone(rid,field,i){try{const s=JSON.parse(localStorage.getItem(LS_KEY)||'{}');return s[`${rid}__${field}__${i}`]===true;}catch(e){return false;}}
+function setTaskDone(rid,field,i,done){try{const s=JSON.parse(localStorage.getItem(LS_KEY)||'{}');s[`${rid}__${field}__${i}`]=done;localStorage.setItem(LS_KEY,JSON.stringify(s));}catch(e){}}
+
+function fmt(iso){if(!iso)return'—';try{const d=new Date(iso);return`${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()} – ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;}catch(e){return'—';}}
+function fmtNow(){return fmt(new Date().toISOString());}
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ── DASHBOARD ──
+function updateDashboard(){
+  const total=allRecords.length;
+  document.getElementById('sysTotal').textContent=total;
+
+  let stOpen=0,szOpen=0;
+  allRecords.forEach(r=>{
+    if(Array.isArray(r.ulohy_staubert))r.ulohy_staubert.forEach((_,i)=>{if(!getTaskDone(r.id,'ulohy_staubert',i))stOpen++;});
+    if(Array.isArray(r.ulohy_szabo))r.ulohy_szabo.forEach((_,i)=>{if(!getTaskDone(r.id,'ulohy_szabo',i))szOpen++;});
   });
+  const openTotal=stOpen+szOpen;
+  document.getElementById('dOpenTotal').textContent=openTotal;
+  document.getElementById('dOpenSub').textContent=`Staubert: ${stOpen}  ·  Szabó: ${szOpen}`;
+  document.getElementById('dStVal').textContent=stOpen;
+  document.getElementById('dSzVal').textContent=szOpen;
+  document.getElementById('dStSub').textContent=stOpen===0?'všetky splnené':'otvorených úloh';
+  document.getElementById('dSzSub').textContent=szOpen===0?'všetky splnené':'otvorených úloh';
+  const tot=stOpen+szOpen||1;
+  document.getElementById('dSplitSt').style.width=Math.round(stOpen/tot*100)+'%';
+
+  const crit=allRecords.filter(r=>r.problem&&r.problem.trim()!=='').length;
+  document.getElementById('dCritVal').textContent=crit;
+  document.getElementById('dCritSub').textContent=crit===0?'žiadne problémy':'záznamov s problémom';
+  document.getElementById('dCardCrit').style.borderColor=crit>0?'rgba(255,69,0,.35)':'rgba(255,69,0,.12)';
+
+  const today=new Date().toISOString().slice(0,10);
+  const todayRecs=allRecords.filter(r=>r.created_at&&r.created_at.slice(0,10)===today);
+  document.getElementById('dTodayVal').textContent=todayRecs.length;
+  document.getElementById('dTodaySub').textContent=todayRecs.length>0?'posledná: '+fmt(todayRecs[0].created_at).split(' – ')[1]:'dnes žiadna aktivita';
+
+  if(lastReportTime){
+    document.getElementById('dReportVal').textContent=lastReportTime;
+    document.getElementById('dReportSub').textContent=`${allRecords.length} záznamov analyzovaných`;
+  }
+
+  const isPWA=window.matchMedia('(display-mode: standalone)').matches;
+  document.getElementById('sysPWA').textContent=isPWA?'Aktívne':'Browser';
+  document.getElementById('sysPWA').className='sys-line-val '+(isPWA?'ok':'dim');
+  document.getElementById('dotPWA').className='sys-dot'+(isPWA?'':' dim');
 }
+
+function setDBStatus(ok){
+  document.getElementById('dotDB').className='sys-dot'+(ok?'':' err');
+  document.getElementById('lblDB').textContent=ok?'DB':'ERR';
+  document.getElementById('sysDB').textContent=ok?'OK':'CHYBA';
+  document.getElementById('sysDB').className='sys-line-val '+(ok?'ok':'err');
+}
+
+// ── PANELS ──
+function hideAllPanels(){['dashboardPanel','newPanel','historyPanel','detailPanel','reportPanel','openTasksPanel'].forEach(id=>document.getElementById(id).style.display='none');}
 function showTab(tab,el){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   if(el)el.classList.add('active');
   hideAllPanels();
-  document.getElementById('newPanel').style.display=tab==='new'?'block':'none';
-  document.getElementById('historyPanel').style.display=tab==='history'?'block':'none';
-  if(tab==='history')loadHistory();
+  if(tab==='dashboard'){document.getElementById('dashboardPanel').style.display='block';}
+  else if(tab==='new'){document.getElementById('newPanel').style.display='block';}
+  else if(tab==='history'){document.getElementById('historyPanel').style.display='block';loadHistory();}
 }
-function goBack(){
-  currentDetail=null;
-  hideAllPanels();
-  document.getElementById('historyPanel').style.display='block';
-  document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');if(i===1)t.classList.add('active');});
+function goBack(){currentDetail=null;hideAllPanels();document.getElementById('historyPanel').style.display='block';document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');if(i===2)t.classList.add('active');});}
+function goBackFromReport(){hideAllPanels();document.getElementById('historyPanel').style.display='block';document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');if(i===2)t.classList.add('active');});}
+function goBackFromOpenTasks(){hideAllPanels();document.getElementById('historyPanel').style.display='block';document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');if(i===2)t.classList.add('active');});}
+function showOpenTasksFromDash(){
+  if(!allRecords.length){showToast('Najprv načítaj históriu');return;}
+  hideAllPanels();document.getElementById('openTasksPanel').style.display='block';
+  document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');if(i===2)t.classList.add('active');});
+  renderOpenTasks();
 }
-function goBackFromReport(){
-  hideAllPanels();
-  document.getElementById('historyPanel').style.display='block';
-  document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');if(i===1)t.classList.add('active');});
-}
-function goBackFromOpenTasks(){
-  hideAllPanels();
-  document.getElementById('historyPanel').style.display='block';
-  document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');if(i===1)t.classList.add('active');});
-}
+
+// ── OPEN TASKS ──
 function showOpenTasks(){
   if(!allRecords.length){showToast('Najprv načítaj históriu');return;}
-  hideAllPanels();
-  document.getElementById('openTasksPanel').style.display='block';
-  document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');if(i===1)t.classList.add('active');});
+  hideAllPanels();document.getElementById('openTasksPanel').style.display='block';
   renderOpenTasks();
 }
 function renderOpenTasks(){
-  const list=document.getElementById('openTasksList');
-  list.innerHTML='';
-  const openItems=[];
+  const list=document.getElementById('openTasksList');list.innerHTML='';
+  const items=[];
   allRecords.forEach(r=>{
     [{field:'ulohy_staubert',label:'Staubert'},{field:'ulohy_szabo',label:'Szabó'}].forEach(f=>{
-      const arr=r[f.field];
-      if(!Array.isArray(arr))return;
-      arr.forEach((item,i)=>{
-        if(!getTaskDone(r.id,f.field,i)){
-          openItems.push({recordId:r.id,field:f.field,index:i,label:f.label,text:item,datum:r.datum,created_at:r.created_at,co_sa_riesilo:r.co_sa_riesilo});
-        }
-      });
+      const arr=r[f.field];if(!Array.isArray(arr))return;
+      arr.forEach((item,i)=>{if(!getTaskDone(r.id,f.field,i))items.push({rid:r.id,field:f.field,idx:i,label:f.label,text:item,datum:r.datum,ca:r.created_at,co:r.co_sa_riesilo});});
     });
   });
-  document.getElementById('openTasksCount').textContent=`${openItems.length} otvorených`;
-  if(!openItems.length){list.innerHTML='<div class="no-records">✅ Všetky úlohy sú splnené!</div>';return;}
-  openItems.forEach(item=>{
+  document.getElementById('openTasksCount').textContent=`${items.length} otvorených`;
+  if(!items.length){list.innerHTML='<div class="no-records">✅ Všetky úlohy sú splnené!</div>';return;}
+  items.forEach(item=>{
+    const isSt=item.label==='Staubert';
     const div=document.createElement('div');
-    div.className='open-task-item';
-    div.id=`ot-${item.recordId}-${item.field}-${item.index}`;
-    const ulozene=item.created_at?formatDatumCas(item.created_at):'—';
-    div.innerHTML=`<span class="open-task-icon">❌</span><div class="open-task-body"><div class="open-task-text">${escHtml(item.text)}</div><div class="open-task-meta"><span class="open-task-kto ${item.label.toLowerCase()}">${item.label}</span><span>${item.datum||'—'}</span><span>Uložené: ${ulozene}</span></div><div class="open-task-zaznam">${escHtml(item.co_sa_riesilo||'—')}</div></div>`;
+    div.className='open-task-item '+(isSt?'st-task':'sz-task');
+    div.innerHTML=`<span class="open-task-icon">❌</span><div class="open-task-body"><div class="open-task-text">${escHtml(item.text)}</div><div class="open-task-meta"><span class="open-task-kto ${isSt?'staubert':'szabo'}">${item.label}</span><span>${item.datum||'—'}</span></div><div class="open-task-zaznam">${escHtml(item.co||'—')}</div></div>`;
     div.addEventListener('click',()=>{
-      setTaskDone(item.recordId,item.field,item.index,true);
-      div.querySelector('.open-task-icon').textContent='✅';
-      div.classList.add('hotove');
-      setTimeout(()=>{
-        div.remove();
-        const zostatok=document.querySelectorAll('.open-task-item:not(.hotove)').length;
-        document.getElementById('openTasksCount').textContent=`${zostatok} otvorených`;
-        if(zostatok===0){list.innerHTML='<div class="no-records">✅ Všetky úlohy sú splnené!</div>';}
-      },600);
+      setTaskDone(item.rid,item.field,item.idx,true);
+      div.querySelector('.open-task-icon').textContent='✅';div.classList.add('hotove');
+      setTimeout(()=>{div.remove();const z=document.querySelectorAll('.open-task-item:not(.hotove)').length;document.getElementById('openTasksCount').textContent=`${z} otvorených`;if(z===0)list.innerHTML='<div class="no-records">✅ Všetky úlohy sú splnené!</div>';updateDashboard();},500);
     });
     list.appendChild(div);
   });
 }
-function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ── DETAIL ──
 function openDetail(record){
-  currentDetail=record;
-  hideAllPanels();
+  currentDetail=record;hideAllPanels();
   document.getElementById('detailPanel').style.display='block';
   document.getElementById('editForm').style.display='none';
   document.getElementById('detailGrid').style.display='flex';
-  document.getElementById('btnEdit').textContent='✏️ Upraviť záznam';
-  const ulozene=record.created_at?`Uložené do systému: ${formatDatumCas(record.created_at)}`:'Uložené do systému: —';
-  document.getElementById('detailHeader').innerHTML=`<div class="detail-date">${record.datum||'—'}</div><div class="detail-ulozene">${ulozene}</div><div class="detail-title">${escHtml(record.co_sa_riesilo||'—')}</div>`;
-  const grid=document.getElementById('detailGrid');
-  grid.innerHTML='';
-  [{key:'vysledok',label:'Výsledok'},{key:'problem',label:'Problém'},{key:'dalsi_krok',label:'Ďalší krok'}].forEach(f=>{
-    const val=record[f.key];
+  document.getElementById('btnEdit').textContent='✏️ Upraviť';
+  document.getElementById('detailHeader').innerHTML=`<div class="detail-date">${record.datum||'—'}</div><div class="detail-ulozene">${record.created_at?`Uložené: ${fmt(record.created_at)}`:'—'}</div><div class="detail-title">${escHtml(record.co_sa_riesilo||'—')}</div>`;
+  const grid=document.getElementById('detailGrid');grid.innerHTML='';
+  [{key:'vysledok',label:'Výsledok',cls:''},{key:'problem',label:'Problém',cls:''},{key:'dalsi_krok',label:'Ďalší krok',cls:''}].forEach(f=>{
     const div=document.createElement('div');div.className='field';
     const lbl=document.createElement('div');lbl.className='field-label';lbl.textContent=f.label;
     const vdiv=document.createElement('div');vdiv.className='field-value';
-    if(val&&val!==''){vdiv.textContent=val;}else{vdiv.textContent='—';vdiv.classList.add('empty');}
+    const val=record[f.key];if(val&&val!==''){vdiv.textContent=val;}else{vdiv.textContent='—';vdiv.classList.add('empty');}
     div.appendChild(lbl);div.appendChild(vdiv);grid.appendChild(div);
   });
-  [{key:'ulohy_staubert',label:'Úlohy – Staubert'},{key:'ulohy_szabo',label:'Úlohy – Szabó'}].forEach(f=>{
-    const val=record[f.key];
+  [{key:'ulohy_staubert',label:'Úlohy – Staubert',cls:'st',taskCls:'st-task'},{key:'ulohy_szabo',label:'Úlohy – Szabó',cls:'sz',taskCls:'sz-task'}].forEach(f=>{
     const div=document.createElement('div');div.className='field';
-    const lbl=document.createElement('div');lbl.className='field-label';lbl.textContent=f.label;
+    const lbl=document.createElement('div');lbl.className=`field-label ${f.cls}`;lbl.textContent=f.label;
     div.appendChild(lbl);
+    const val=record[f.key];
     if(Array.isArray(val)&&val.length>0){
       const tl=document.createElement('div');tl.className='task-list';
       val.forEach((item,i)=>{
         const done=getTaskDone(record.id,f.key,i);
-        const t=document.createElement('div');
-        t.className='task-item'+(done?' done':'');
+        const t=document.createElement('div');t.className=`task-item ${f.taskCls}`+(done?' done':'');
         const icon=document.createElement('span');icon.className='task-icon';icon.textContent=done?'✅':'❌';
-        const text=document.createElement('span');text.textContent=item;
-        t.appendChild(icon);t.appendChild(text);
-        t.addEventListener('click',()=>{
-          const nowDone=t.classList.toggle('done');
-          icon.textContent=nowDone?'✅':'❌';
-          setTaskDone(record.id,f.key,i,nowDone);
-        });
+        const txt=document.createElement('span');txt.textContent=item;
+        t.appendChild(icon);t.appendChild(txt);
+        t.addEventListener('click',()=>{const nd=t.classList.toggle('done');icon.textContent=nd?'✅':'❌';setTaskDone(record.id,f.key,i,nd);updateDashboard();});
         tl.appendChild(t);
       });
       div.appendChild(tl);
@@ -400,148 +620,92 @@ function openDetail(record){
   });
 }
 function copyDetail(){
-  if(!currentDetail)return;
-  const r=currentDetail;
-  const formatTasks=(field,arr)=>{
-    if(!Array.isArray(arr)||!arr.length)return'—';
-    return arr.map((item,i)=>(getTaskDone(r.id,field,i)?'✅':'❌')+' '+item).join('\n');
-  };
-  const ulozene=r.created_at?`Uložené: ${formatDatumCas(r.created_at)}`:'Uložené: —';
-  const text=[
-    `Dátum: ${r.datum||'—'}`,ulozene,
-    `Čo sa riešilo: ${r.co_sa_riesilo||'—'}`,
-    `Výsledok: ${r.vysledok||'—'}`,
-    `Problém: ${r.problem||'—'}`,
-    `Úlohy Staubert:\n${formatTasks('ulohy_staubert',r.ulohy_staubert)}`,
-    `Úlohy Szabó:\n${formatTasks('ulohy_szabo',r.ulohy_szabo)}`,
-    `Ďalší krok: ${r.dalsi_krok||'—'}`
-  ].join('\n\n');
-  navigator.clipboard.writeText(text).then(()=>showToast('Záznam skopírovaný')).catch(()=>showToast('Kopírovanie zlyhalo'));
+  if(!currentDetail)return;const r=currentDetail;
+  const fT=(f,arr)=>{if(!Array.isArray(arr)||!arr.length)return'—';return arr.map((item,i)=>(getTaskDone(r.id,f,i)?'✅':'❌')+' '+item).join('\n');};
+  navigator.clipboard.writeText([`Dátum: ${r.datum||'—'}`,r.created_at?`Uložené: ${fmt(r.created_at)}`:'',`Čo sa riešilo: ${r.co_sa_riesilo||'—'}`,`Výsledok: ${r.vysledok||'—'}`,`Problém: ${r.problem||'—'}`,`Úlohy Staubert:\n${fT('ulohy_staubert',r.ulohy_staubert)}`,`Úlohy Szabó:\n${fT('ulohy_szabo',r.ulohy_szabo)}`,`Ďalší krok: ${r.dalsi_krok||'—'}`].join('\n\n')).then(()=>showToast('Skopírovaný')).catch(()=>showToast('Chyba'));
 }
+
+// ── EDIT ──
 function toggleEditMode(){
-  const editForm=document.getElementById('editForm');
-  const detailGrid=document.getElementById('detailGrid');
-  const btnEdit=document.getElementById('btnEdit');
-  if(editForm.style.display==='none'){
-    if(!currentDetail)return;
-    const r=currentDetail;
-    document.getElementById('edit-datum').value=r.datum||'';
-    document.getElementById('edit-co_sa_riesilo').value=r.co_sa_riesilo||'';
-    document.getElementById('edit-vysledok').value=r.vysledok||'';
-    document.getElementById('edit-problem').value=r.problem||'';
-    document.getElementById('edit-dalsi_krok').value=r.dalsi_krok||'';
+  const ef=document.getElementById('editForm'),dg=document.getElementById('detailGrid'),be=document.getElementById('btnEdit');
+  if(ef.style.display==='none'){
+    if(!currentDetail)return;const r=currentDetail;
+    ['datum','co_sa_riesilo','vysledok','problem','dalsi_krok'].forEach(k=>document.getElementById('edit-'+k).value=r[k]||'');
     document.getElementById('edit-ulohy_staubert').value=Array.isArray(r.ulohy_staubert)?r.ulohy_staubert.join('\n'):'';
     document.getElementById('edit-ulohy_szabo').value=Array.isArray(r.ulohy_szabo)?r.ulohy_szabo.join('\n'):'';
-    document.getElementById('editStatus').textContent='';
-    document.getElementById('editStatus').className='edit-status';
-    editForm.style.display='block';
-    detailGrid.style.display='none';
-    btnEdit.textContent='👁 Zobraziť detail';
-  } else {
-    editForm.style.display='none';
-    detailGrid.style.display='flex';
-    btnEdit.textContent='✏️ Upraviť záznam';
-  }
+    document.getElementById('editStatus').textContent='';document.getElementById('editStatus').className='edit-status';
+    ef.style.display='block';dg.style.display='none';be.textContent='👁 Detail';
+  } else {ef.style.display='none';dg.style.display='flex';be.textContent='✏️ Upraviť';}
 }
-function cancelEdit(){
-  document.getElementById('editForm').style.display='none';
-  document.getElementById('detailGrid').style.display='flex';
-  document.getElementById('btnEdit').textContent='✏️ Upraviť záznam';
-  document.getElementById('editStatus').textContent='';
-  document.getElementById('editStatus').className='edit-status';
-}
+function cancelEdit(){document.getElementById('editForm').style.display='none';document.getElementById('detailGrid').style.display='flex';document.getElementById('btnEdit').textContent='✏️ Upraviť';}
 async function saveEdit(){
   if(!currentDetail)return;
-  const btn=document.getElementById('btnSave');
-  const statusEl=document.getElementById('editStatus');
-  btn.disabled=true;
-  statusEl.textContent='Ukladám...';
-  statusEl.className='edit-status';
-  const ulohy_staubert=document.getElementById('edit-ulohy_staubert').value.split('\n').map(l=>l.trim()).filter(Boolean);
-  const ulohy_szabo=document.getElementById('edit-ulohy_szabo').value.split('\n').map(l=>l.trim()).filter(Boolean);
-  const payload={id:currentDetail.id,datum:document.getElementById('edit-datum').value,co_sa_riesilo:document.getElementById('edit-co_sa_riesilo').value.trim(),vysledok:document.getElementById('edit-vysledok').value.trim(),problem:document.getElementById('edit-problem').value.trim(),dalsi_krok:document.getElementById('edit-dalsi_krok').value.trim(),ulohy_staubert,ulohy_szabo};
+  const btn=document.getElementById('btnSave'),se=document.getElementById('editStatus');
+  btn.disabled=true;se.textContent='Ukladám...';se.className='edit-status';
+  const payload={id:currentDetail.id,datum:document.getElementById('edit-datum').value,co_sa_riesilo:document.getElementById('edit-co_sa_riesilo').value.trim(),vysledok:document.getElementById('edit-vysledok').value.trim(),problem:document.getElementById('edit-problem').value.trim(),dalsi_krok:document.getElementById('edit-dalsi_krok').value.trim(),ulohy_staubert:document.getElementById('edit-ulohy_staubert').value.split('\n').map(l=>l.trim()).filter(Boolean),ulohy_szabo:document.getElementById('edit-ulohy_szabo').value.split('\n').map(l=>l.trim()).filter(Boolean)};
   try{
     const res=await fetch('/.netlify/functions/update-record',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-    const data=await res.json();
-    if(!res.ok)throw new Error(data.error||'Chyba servera');
+    const data=await res.json();if(!res.ok)throw new Error(data.error||'Chyba');
     const updated=data.record?data.record:{...currentDetail,...payload};
-    currentDetail=updated;
-    const idx=allRecords.findIndex(r=>r.id===updated.id);
-    if(idx!==-1)allRecords[idx]=updated;
-    statusEl.textContent='✓ Uložené';
-    statusEl.className='edit-status ok';
-    setTimeout(()=>{cancelEdit();openDetail(updated);},800);
-  }catch(e){
-    statusEl.textContent='✗ '+e.message;
-    statusEl.className='edit-status error';
-  }finally{btn.disabled=false;}
+    currentDetail=updated;const idx=allRecords.findIndex(r=>r.id===updated.id);if(idx!==-1)allRecords[idx]=updated;
+    se.textContent='✓ Uložené';se.className='edit-status ok';
+    setTimeout(()=>{cancelEdit();openDetail(updated);updateDashboard();},700);
+  }catch(e){se.textContent='✗ '+e.message;se.className='edit-status error';}finally{btn.disabled=false;}
 }
+
+// ── AI REPORT ──
 async function createAiReport(){
-  if(!allRecords.length){showToast('Žiadne záznamy na analýzu');return;}
-  const btn=document.getElementById('btnAiReport');
-  btn.disabled=true;btn.textContent='⏳ Generujem...';
-  const teraz=formatTeraz();
-  lastReportMeta=`AI report vytvorený: ${teraz} · ${allRecords.length} záznamov`;
-  hideAllPanels();
-  document.getElementById('reportPanel').style.display='block';
+  if(!allRecords.length){showToast('Žiadne záznamy');return;}
+  const btn=document.getElementById('btnAiReport');btn.disabled=true;btn.textContent='⏳ Generujem...';
+  const teraz=fmtNow();lastReportMeta=`${teraz} · ${allRecords.length} záznamov`;lastReportTime=teraz;
+  hideAllPanels();document.getElementById('reportPanel').style.display='block';
   document.getElementById('reportMeta').textContent=lastReportMeta;
   document.getElementById('reportBody').innerHTML=`<div class="report-loading"><div class="spinner"></div><br>AI analyzuje záznamy...</div>`;
-  document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');if(i===1)t.classList.add('active');});
   try{
     const res=await fetch('/.netlify/functions/ai-report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({records:allRecords})});
-    const data=await res.json();
-    if(!res.ok)throw new Error(data.error||'Chyba servera');
+    const data=await res.json();if(!res.ok)throw new Error(data.error||'Chyba');
     lastReport=data.report;
-    renderReport(data.report);
-  }catch(e){
-    document.getElementById('reportBody').innerHTML=`<div style="color:var(--danger);font-family:'IBM Plex Mono',monospace;font-size:13px;">✗ ${e.message}</div>`;
-  }finally{btn.disabled=false;btn.textContent='🧠 AI report';}
+    document.getElementById('reportBody').innerHTML=data.report.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/^## (.+)$/gm,'<h2>$1</h2>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+    updateDashboard();
+  }catch(e){document.getElementById('reportBody').innerHTML=`<div style="color:var(--danger);font-size:12px;font-family:'IBM Plex Mono',monospace">✗ ${e.message}</div>`;}
+  finally{btn.disabled=false;btn.textContent='🧠 AI report';}
 }
-function renderReport(text){
-  const html=text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/^## (.+)$/gm,'<h2>$1</h2>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
-  document.getElementById('reportBody').innerHTML=html;
-}
-function copyReport(){
-  if(!lastReport){showToast('Žiadny report na kopírovanie');return;}
-  const full=`${lastReportMeta}\n\n${lastReport}`;
-  navigator.clipboard.writeText(full).then(()=>showToast('Report skopírovaný')).catch(()=>showToast('Kopírovanie zlyhalo'));
-}
+function copyReport(){if(!lastReport){showToast('Žiadny report');return;}navigator.clipboard.writeText(`${lastReportMeta}\n\n${lastReport}`).then(()=>showToast('Skopírovaný')).catch(()=>showToast('Chyba'));}
+
+// ── NEW ENTRY ──
 async function spracovat(){
   const text=document.getElementById('inputText').value.trim();
   if(!text){setStatus('Vlož text.','error');return;}
-  const btn=document.getElementById('btn');
-  btn.disabled=true;setStatus('Spracúvam...','');
+  const btn=document.getElementById('btn');btn.disabled=true;setStatus('Spracúvam...','');
   try{
     const res=await fetch('/.netlify/functions/process',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
-    const data=await res.json();
-    if(!res.ok)throw new Error(data.error||'Chyba servera');
-    document.getElementById('inputText').value='';
-    zobrazVysledok(data);setStatus('✓ Uložené do databázy','ok');
-  }catch(e){setStatus('✗ '+e.message,'error');}
-  finally{btn.disabled=false;}
+    const data=await res.json();if(!res.ok)throw new Error(data.error||'Chyba');
+    document.getElementById('inputText').value='';zobrazVysledok(data);setStatus('✓ Uložené','ok');
+    allRecords.unshift(data);updateDashboard();
+  }catch(e){setStatus('✗ '+e.message,'error');}finally{btn.disabled=false;}
 }
 function setStatus(msg,type){const el=document.getElementById('status');el.textContent=msg;el.className=type;}
 function zobrazVysledok(d){
   const grid=document.getElementById('resultGrid');grid.innerHTML='';
-  [{key:'datum',label:'Dátum'},{key:'co_sa_riesilo',label:'Čo sa riešilo'},{key:'vysledok',label:'Výsledok'},{key:'problem',label:'Problém'},{key:'ulohy_staubert',label:'Úlohy – Staubert',isArray:true},{key:'ulohy_szabo',label:'Úlohy – Szabó',isArray:true},{key:'dalsi_krok',label:'Ďalší krok'}].forEach(f=>{
+  [{key:'datum',label:'Dátum'},{key:'co_sa_riesilo',label:'Čo sa riešilo'},{key:'vysledok',label:'Výsledok'},{key:'problem',label:'Problém'},{key:'ulohy_staubert',label:'Úlohy – Staubert',isArr:true,cls:'st'},{key:'ulohy_szabo',label:'Úlohy – Szabó',isArr:true,cls:'sz'},{key:'dalsi_krok',label:'Ďalší krok'}].forEach(f=>{
     const val=d[f.key],div=document.createElement('div');div.className='field';
-    const lbl=document.createElement('div');lbl.className='field-label';lbl.textContent=f.label;
+    const lbl=document.createElement('div');lbl.className='field-label'+(f.cls?' '+f.cls:'');lbl.textContent=f.label;
     const vdiv=document.createElement('div');vdiv.className='field-value';
-    if(f.isArray&&Array.isArray(val)&&val.length>0){const tl=document.createElement('div');tl.className='tag-list';val.forEach(item=>{const t=document.createElement('span');t.className='tag';t.textContent=item;tl.appendChild(t);});vdiv.appendChild(tl);}
-    else if(val&&val!==''){vdiv.textContent=val;}
-    else{vdiv.textContent='—';vdiv.classList.add('empty');}
+    if(f.isArr&&Array.isArray(val)&&val.length>0){const tl=document.createElement('div');tl.className='tag-list';val.forEach(item=>{const t=document.createElement('span');t.className='tag';t.textContent=item;tl.appendChild(t);});vdiv.appendChild(tl);}
+    else if(val&&val!==''){vdiv.textContent=val;}else{vdiv.textContent='—';vdiv.classList.add('empty');}
     div.appendChild(lbl);div.appendChild(vdiv);grid.appendChild(div);
   });
   document.getElementById('result').style.display='block';
 }
+
+// ── HISTORY ──
 async function loadHistory(){
-  const list=document.getElementById('recordsList');
-  list.innerHTML='<div class="no-records">Načítavam...</div>';
+  const list=document.getElementById('recordsList');list.innerHTML='<div class="no-records">Načítavam...</div>';
   selectedIds.clear();updateToolbar();
   try{
     const res=await fetch(`${SUPABASE_URL}/rest/v1/zaznam?select=*&order=created_at.desc`,{headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`}});
-    allRecords=await res.json();renderList();
-  }catch(e){list.innerHTML='<div class="no-records">Chyba načítania</div>';}
+    allRecords=await res.json();setDBStatus(true);renderList();updateDashboard();
+  }catch(e){list.innerHTML='<div class="no-records">Chyba načítania</div>';setDBStatus(false);}
 }
 function renderList(){
   const list=document.getElementById('recordsList');
@@ -550,10 +714,12 @@ function renderList(){
   if(!filtered.length){list.innerHTML='<div class="no-records">Žiadne záznamy</div>';return;}
   list.innerHTML='';
   filtered.forEach(r=>{
-    const item=document.createElement('div');
-    item.className='zaznam-item'+(selectedIds.has(r.id)?' selected':'');
-    const ulozene=r.created_at?`Uložené: ${formatDatumCas(r.created_at)}`:'Uložené: —';
-    item.innerHTML=`<div class="zaznam-check"></div><div class="zaznam-body"><div class="zaznam-date">${r.datum||'—'}</div><div class="zaznam-title">${escHtml(r.co_sa_riesilo||'—')}</div><div class="zaznam-sub">${escHtml(r.dalsi_krok||'')}</div><div class="zaznam-ulozene">${ulozene}</div></div><button class="zaznam-delete" onclick="event.stopPropagation();deleteSingle('${r.id}')">🗑</button>`;
+    const item=document.createElement('div');item.className='zaznam-item'+(selectedIds.has(r.id)?' selected':'');
+    const hasSt=Array.isArray(r.ulohy_staubert)&&r.ulohy_staubert.length>0;
+    const hasSz=Array.isArray(r.ulohy_szabo)&&r.ulohy_szabo.length>0;
+    const hasProb=r.problem&&r.problem.trim()!=='';
+    const pills=(hasSt?'<span class="pill st">Staubert</span>':'')+(hasSz?'<span class="pill sz">Szabó</span>':'')+(hasProb?'<span class="pill prob">⚠ Problém</span>':'');
+    item.innerHTML=`<div class="zaznam-check"></div><div class="zaznam-body"><div class="zaznam-date">${r.datum||'—'}</div><div class="zaznam-title">${escHtml(r.co_sa_riesilo||'—')}</div><div class="zaznam-sub">${escHtml(r.dalsi_krok||'')}</div>${pills?'<div class="zaznam-pills">'+pills+'</div>':''}<div class="zaznam-ulozene">${r.created_at?fmt(r.created_at):''}</div></div><button class="zaznam-delete" onclick="event.stopPropagation();deleteSingle('${r.id}')">🗑</button>`;
     item.querySelector('.zaznam-check').addEventListener('click',e=>{e.stopPropagation();toggleSelect(r.id);});
     item.addEventListener('click',()=>openDetail(r));
     list.appendChild(item);
@@ -563,48 +729,41 @@ function toggleSelect(id){if(selectedIds.has(id))selectedIds.delete(id);else sel
 function toggleSelectAll(){if(selectedIds.size===allRecords.length)selectedIds.clear();else allRecords.forEach(r=>selectedIds.add(r.id));updateToolbar();renderList();}
 function updateToolbar(){
   const n=selectedIds.size;
-  const btn=document.getElementById('btnDeleteSelected');
-  btn.textContent=`🗑 Vymazať označené (${n})`;btn.disabled=n===0;
+  document.getElementById('btnDeleteSelected').textContent=`🗑 Vymazať (${n})`;
+  document.getElementById('btnDeleteSelected').disabled=n===0;
   document.getElementById('selectedCount').textContent=n>0?`${n} označených`:'';
-  document.getElementById('btnSelectAll').textContent=selectedIds.size===allRecords.length&&allRecords.length>0?'Zrušiť výber':'Označiť všetko';
+  document.getElementById('btnSelectAll').textContent=selectedIds.size===allRecords.length&&allRecords.length>0?'Zrušiť':'Označiť';
 }
+
+// ── DELETE ──
 function deleteSingle(id){showModal('Naozaj chceš vymazať tento záznam?',()=>executeDelete([id]));}
-function deleteSelected(){const ids=[...selectedIds];showModal(`Naozaj chceš vymazať ${ids.length} záznam${ids.length>1?'ov':''}?`,()=>executeDelete(ids));}
-function showModal(text,callback){document.getElementById('modalText').textContent=text;document.getElementById('modal').classList.add('show');deleteCallback=callback;}
+function deleteSelected(){const ids=[...selectedIds];showModal(`Naozaj vymazať ${ids.length} záznam${ids.length>1?'ov':''}?`,()=>executeDelete(ids));}
+function showModal(text,cb){document.getElementById('modalText').textContent=text;document.getElementById('modal').classList.add('show');deleteCallback=cb;}
 function closeModal(){document.getElementById('modal').classList.remove('show');}
 function confirmDelete(){const cb=deleteCallback;closeModal();deleteCallback=null;if(cb)cb();}
 async function executeDelete(ids){
   pendingDelete=allRecords.filter(r=>ids.includes(r.id));
   allRecords=allRecords.filter(r=>!ids.includes(r.id));
-  ids.forEach(id=>selectedIds.delete(id));
-  updateToolbar();renderList();
+  ids.forEach(id=>selectedIds.delete(id));updateToolbar();renderList();updateDashboard();
   try{
     const res=await fetch('/.netlify/functions/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids})});
     if(!res.ok)throw new Error(await res.text());
     showToast(`${ids.length} záznam${ids.length>1?'y':''} vymazaný`);
-  }catch(e){allRecords=[...allRecords,...pendingDelete];renderList();showToast('Chyba: '+e.message);}
+  }catch(e){allRecords=[...allRecords,...pendingDelete];renderList();updateDashboard();showToast('Chyba: '+e.message);}
 }
-function undoDelete(){
-  if(!pendingDelete.length)return;
-  allRecords=[...allRecords,...pendingDelete].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
-  pendingDelete=[];renderList();hideToast();
-}
-function showToast(text){
-  clearTimeout(toastTimer);
-  document.getElementById('toastText').textContent=text;
-  document.getElementById('toast').classList.add('show');
-  toastTimer=setTimeout(hideToast,5000);
-}
+function undoDelete(){if(!pendingDelete.length)return;allRecords=[...allRecords,...pendingDelete].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));pendingDelete=[];renderList();updateDashboard();hideToast();}
+
+// ── TOAST ──
+function showToast(text){clearTimeout(toastTimer);document.getElementById('toastText').textContent=text;document.getElementById('toast').classList.add('show');toastTimer=setTimeout(hideToast,4000);}
 function hideToast(){document.getElementById('toast').classList.remove('show');}
+
+// ── INIT ──
+updateDashboard();
+fetch(`${SUPABASE_URL}/rest/v1/zaznam?select=*&order=created_at.desc`,{headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`}})
+  .then(r=>r.json()).then(data=>{allRecords=data;setDBStatus(true);updateDashboard();}).catch(()=>setDBStatus(false));
 </script>
 <script>
-if('serviceWorker' in navigator){
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then(r => console.log('SW registered'))
-      .catch(e => console.log('SW error', e));
-  });
-}
+if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{});});}
 </script>
 </body>
 </html>
