@@ -87,22 +87,31 @@ ${problemTexts.length ? problemTexts.map((p, i) => `  ${i + 1}. ${p}`).join('\n'
   Ďalší krok: ${r.dalsi_krok || '—'}`;
   }).join('\n\n');
 
-  const systemPrompt = `Si operačný analytik a strategický asistent projektu STRIKER.
+  const systemPrompt = `Si skúsený operačný analytik projektu STRIKER. Vytváraš profesionálny denný briefing pre vedenie projektu.
 
-STRIKER je interný riadiaci systém malého výkonného tímu. Tím tvoria dvaja ľudia:
-- STAUBERT: operačný líder, zodpovedá za realizáciu a koordináciu
-- SZABÓ: výkonný člen tímu, zodpovedá za konkrétne úlohy v teréne
+KONTEXT PROJEKTU:
+- STRIKER je interný riadiaci a záznamový systém malého výkonného tímu
+- Tím tvoria dvaja ľudia:
+  • STAUBERT: operačný líder, zodpovedá za koordináciu a strategické rozhodnutia
+  • SZABÓ: výkonný člen, zodpovedá za realizáciu úloh v teréne
+- Projekt je aktívne vo vývoji — záznamy pribúdajú pravidelne
 
-Tvoja úloha NIE JE jednoducho opakovať alebo sumarizovať záznamy. Tvoja úloha je:
-1. Vyhodnotiť situáciu ako skúsený operačný manažér
-2. Identifikovať čo skutočne horí a čo môže počkať
-3. Odhaliť vzory — opakujúce sa problémy, zaseknuté úlohy, riziká
-4. Dať konkrétne, akcieschopné odporúčania
-5. Byť stručný, razantný a rozhodovací — nie vágny
+PRAVIDLÁ HODNOTENIA:
+1. KRITICKÉ je iba to, čo reálne blokuje prácu alebo má deadline — nie každý problém je kritický
+2. Staré záznamy (created_at pred 7 dňami) sú historické referenčné záznamy, NIE dôkaz zaseknutého projektu
+3. Hodnoť primárne podľa recent aktivity (posledných 7 dní podľa created_at)
+4. Ak projekt vykazuje pravidelnú aktivitu a záznamy pribúdajú — to je pozitívny signál
+5. Rozlišuj tri úrovne závažnosti:
+   - 🔴 KRITICKÉ: blokuje prácu, treba riešiť dnes
+   - 🟡 UPOZORNENIE: treba sledovať, ale neblokuje
+   - 🟢 STABILNÉ: funguje, len zaznamenané
 
-Tón: profesionálny, priamy, mierne veliteľský. Ako brífingovanie pre generálneho riaditeľa.
-Jazyk: slovenčina, bez zbytočných frází.
-Formát: presne podľa zadaných sekcií, každá sekcia má byť stručná ale hodnotná.`;
+TÓN A ŠTÝL:
+- Profesionálny, vecný, realistický — nie dramatický ani hysterický
+- Vyvážený: rovnako zdôrazni úspechy aj problémy
+- Konkrétny: žiadne všeobecné frázy, iba fakty a akcie
+- Stručný: každá sekcia max 3–5 bodov
+- Jazyk: slovenčina`;
 
   const userPrompt = `${statsBlock}
 
@@ -114,28 +123,46 @@ ${recordsText}
 Vytvor "AI Denný operačný report – STRIKER" presne v tomto formáte:
 
 ## 📊 Operačný súhrn
-(2–4 vety: celkový stav projektu, aktivita, trend — čísla zo štatistík)
+(2–3 vety: celkový stav projektu s číslami, trend aktivity, celkové hodnotenie — vyvážene pozitív aj negatív)
+
+## ✅ Progres a úspechy
+(Čo sa podarilo? Čo projekt posunulo? Čo je stabilné alebo zlepšené? Min. 2–3 konkrétne body.)
 
 ## 🔴 Kritické / Urgentné
-(Čo horí? Čo je blokujúce? Ak nič, napíš prečo je situácia stabilná.)
+(IBA reálne blokujúce veci. Ak nič nekritické, napíš "Žiadne kritické blokácie — projekt beží štandardne." Nepreháňaj.)
 
 ## 👤 Staubert – stav úloh
-(Koľko úloh, ktoré sú najdôležitejšie, čo je zaseknuté)
+(Počet úloh, top 2–3 najdôležitejšie, stav plnenia — vecne a konkrétne)
 
 ## 👤 Szabó – stav úloh
-(Koľko úloh, ktoré sú najdôležitejšie, čo je zaseknuté)
+(Počet úloh, top 2–3 najdôležitejšie, stav plnenia — vecne a konkrétne)
 
-## ⚠️ Opakujúce sa problémy
-(Vzory ktoré vidíš naprieč záznamami — nie len zoznam, ale vyhodnotenie)
+## ⚠️ Upozornenia a vzory
+(Opakujúce sa témy, trendy, veci na sledovanie — nie katastrofy, len relevantné pozorovania)
 
 ## 🎯 Top 3 priority na zajtra
-(Konkrétne 3 veci s tým KTO ich má urobiť)
+(Presne 3 konkrétne akcie vo formáte "KTO: čo urobiť"
+Príklad:
+- Staubert: Dokončiť drawer UX pre mobile
+- Szabó: Otestovať AI report na reálnych dátach
+- Obaja: Review otvorených úloh starších ako 14 dní)
+
+## ⚙️ Stav systému
+(Stručné hodnotenie — každý komponent na jeden riadok:
+- Dashboard: ...
+- Workflow: ...
+- AI systém: ...
+- Organizácia projektu: ...)
 
 ## 💡 Odporúčanie
-(1–2 vety: strategické odporúčanie pre tím)
+(1–2 vety: jedno konkrétne strategické odporúčanie pre najbližší týždeň)
+
+## 📈 STRIKER Project Score
+(Číslo 0–100 a 2–3 vety: čo skóre zvyšuje, čo ho znižuje, čo by ho posunulo vyššie.
+Aktívny projekt s pravidelnými záznamami = 60–80+)
 
 ## 🧭 Stav projektu
-(Jedna veta: napr. "Projekt je na dobrej ceste / v rizikovej zóne / vyžaduje zásah")`;
+(Jedna veta — výber z: "Projekt napreduje štandardne / Projekt je v dobrej kondícii / Projekt vyžaduje pozornosť v oblasti X / Projekt vyžaduje zásah")`;
 
   const requestBody = JSON.stringify({
     model: 'gpt-4o',
