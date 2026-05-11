@@ -533,7 +533,10 @@
           <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text)" id="dReportVal">Nebol generovaný</div>
           <div class="dcard-sub" id="dReportSub" style="margin-top:3px">–</div>
         </div>
-        <button class="btn-ai" onclick="showTab('history',document.querySelectorAll('.tab')[2]);setTimeout(createAiReport,100)">🧠 Generovať report</button>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn-ai" onclick="showTab('history',document.querySelectorAll('.tab')[2]);setTimeout(createAiReport,100)">🧠 Operačný report</button>
+          <button class="btn-ai" style="border-color:var(--sz);color:var(--sz)" onmouseover="this.style.background='var(--sz)';this.style.color='#000'" onmouseout="this.style.background='transparent';this.style.color='var(--sz)'" onclick="createStrategicReport()">🔭 Strategický briefing</button>
+        </div>
       </div>
     </div>
   </div>
@@ -555,6 +558,7 @@
       <button class="btn-sm btn-danger" id="btnDeleteSelected" onclick="deleteSelected()" disabled>🗑 Vymazať (0)</button>
       <button class="btn-tasks" onclick="showOpenTasks()">❌ Úlohy</button>
       <button class="btn-ai" id="btnAiReport" onclick="createAiReport()">🧠 AI report</button>
+      <button class="btn-ai" id="btnStrategic" onclick="createStrategicReport()" style="border-color:var(--sz);color:var(--sz)">🔭 Strategický</button>
       <span class="selected-count" id="selectedCount"></span>
     </div>
     <div id="recordsList"></div>
@@ -600,6 +604,19 @@
     <div class="report-body" id="reportBody"></div>
   </div>
 
+  <!-- ── STRATEGIC REPORT ── -->
+  <div id="strategicPanel" style="display:none">
+    <div class="report-actions">
+      <button class="btn-sm" onclick="goBackFromStrategic()">⬅ Späť</button>
+      <button class="btn-sm" onclick="copyStrategic()">📋 Kopírovať</button>
+    </div>
+    <div class="report-header" style="border-top-color:var(--sz)">
+      <span class="report-header-title" style="color:var(--sz)">🔭 AI Strategický briefing</span>
+      <span class="report-header-sub" id="strategicMeta"></span>
+    </div>
+    <div class="report-body" id="strategicBody"></div>
+  </div>
+
   <!-- ── OPEN TASKS ── -->
   <div id="openTasksPanel">
     <div class="detail-actions"><button class="btn-sm" onclick="goBackFromOpenTasks()">⬅ Späť</button></div>
@@ -631,7 +648,7 @@
 <script>
 const SUPABASE_URL='https://jjvegnwqipmcipwvdjje.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpqdmVnbndxaXBtY2lwd3ZkamplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTczMTYsImV4cCI6MjA5MzM5MzMxNn0.Jizw9XYzoGlo6teVuo6POx0zybcLjGNwrKGhtTmWXZo';
-let allRecords=[],selectedIds=new Set(),pendingDelete=[],toastTimer=null,deleteCallback=null,currentDetail=null,lastReport='',lastReportMeta='',lastReportTime=null;
+let allRecords=[],selectedIds=new Set(),pendingDelete=[],toastTimer=null,deleteCallback=null,currentDetail=null,lastReport='',lastReportMeta='',lastReportTime=null,lastStrategic='',lastStrategicMeta='';
 let activeDrawer=null, activeCard=null;
 
 const LS_KEY='striker_task_status';
@@ -940,7 +957,7 @@ function setDBStatus(ok){
 }
 
 // ── PANELS ──
-function hideAllPanels(){['dashboardPanel','newPanel','historyPanel','detailPanel','reportPanel','openTasksPanel'].forEach(id=>document.getElementById(id).style.display='none');}
+function hideAllPanels(){['dashboardPanel','newPanel','historyPanel','detailPanel','reportPanel','strategicPanel','openTasksPanel'].forEach(id=>document.getElementById(id).style.display='none');}
 function showTab(tab,el){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   if(el)el.classList.add('active');
@@ -1084,6 +1101,26 @@ async function createAiReport(){
 }
 function copyReport(){if(!lastReport){showToast('Žiadny report');return;}navigator.clipboard.writeText(`${lastReportMeta}\n\n${lastReport}`).then(()=>showToast('Skopírovaný')).catch(()=>showToast('Chyba'));}
 
+
+// ── STRATEGIC REPORT ──
+async function createStrategicReport(){
+  if(!allRecords.length){showToast('Žiadne záznamy');return;}
+  const btn=document.getElementById('btnStrategic');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Analyzujem...';}
+  const teraz=fmtNow();lastStrategicMeta=teraz+' · '+allRecords.length+' záznamov';
+  hideAllPanels();document.getElementById('strategicPanel').style.display='block';
+  document.getElementById('strategicMeta').textContent=lastStrategicMeta;
+  document.getElementById('strategicBody').innerHTML='<div class="report-loading"><div class="spinner"></div><br>AI vykonáva strategickú analýzu...</div>';
+  try{
+    const res=await fetch('/.netlify/functions/ai-strategic',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({records:allRecords})});
+    const data=await res.json();if(!res.ok)throw new Error(data.error||'Chyba');
+    lastStrategic=data.report;
+    document.getElementById('strategicBody').innerHTML=data.report.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/^## (.+)$/gm,'<h2>$1</h2>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  }catch(e){document.getElementById('strategicBody').innerHTML='<div style="color:var(--danger);font-size:12px;font-family:IBM Plex Mono,monospace">✗ '+e.message+'</div>';}
+  finally{if(btn){btn.disabled=false;btn.textContent='🔭 Strategický';}}
+}
+function goBackFromStrategic(){hideAllPanels();document.getElementById('historyPanel').style.display='block';document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');if(i===2)t.classList.add('active');});}
+function copyStrategic(){if(!lastStrategic){showToast('Žiadny report');return;}navigator.clipboard.writeText(lastStrategicMeta+'\n\n'+lastStrategic).then(()=>showToast('Skopírovaný')).catch(()=>showToast('Chyba'));}
 // ── NEW ENTRY ──
 async function spracovat(){
   const text=document.getElementById('inputText').value.trim();
