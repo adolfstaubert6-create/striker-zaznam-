@@ -1211,7 +1211,113 @@ function hideToast(){document.getElementById('toast').classList.remove('show');}
 // ── INIT ──
 updateDashboard();
 fetch(`${SUPABASE_URL}/rest/v1/zaznam?select=*&order=created_at.desc`,{headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`}})
-  .then(r=>r.json()).then(data=>{allRecords=data;setDBStatus(true);updateDashboard();}).catch(()=>setDBStatus(false));
+  .then(r=>r.json()).then(data=>{allRecords=data;setDBStatus(true);updateDashboard();initRealtime();}).catch(()=>setDBStatus(false));
+
+// ── REALTIME ──
+let _realtimeActive=false;
+let _renderTimer=null;
+
+function scheduleRender(){
+  // Throttle — max 1 render per 300ms aby dashboard neblikal
+  if(_renderTimer)return;
+  _renderTimer=setTimeout(()=>{
+    _renderTimer=null;
+    updateDashboard();
+    const hist=document.getElementById('historyPanel');
+    if(hist&&hist.style.display!=='none')renderList();
+  },300);
+}
+
+function initRealtime(){
+  // Guard proti duplicate subscriptions
+  if(_realtimeActive)return;
+  _realtimeActive=true;
+
+  const wsUrl=SUPABASE_URL.replace('https://','wss://')+'/realtime/v1/websocket?apikey='+SUPABASE_KEY+'&vsn=1.0.0';
+  let ws,pingInterval,reconnectTimer;
+
+  function connect(){
+    try{
+      ws=new WebSocket(wsUrl);
+
+      ws.onopen=()=>{
+        ws.send(JSON.stringify({
+          topic:'realtime:public:zaznam',
+          event:'phx_join',
+          payload:{config:{broadcast:{self:false},presence:{key:''},postgres_changes:[
+            {event:'INSERT',schema:'public',table:'zaznam'},
+            {event:'UPDATE',schema:'public',table:'zaznam'},
+            {event:'DELETE',schema:'public',table:'zaznam'}
+          ]}},
+          ref:'1'
+        }));
+        pingInterval=setInterval(()=>{
+          if(ws.readyState===WebSocket.OPEN){
+            ws.send(JSON.stringify({topic:'phoenix',event:'heartbeat',payload:{},ref:'ping'}));
+          }
+        },30000);
+        document.getElementById('dotAI').className='sys-dot';
+      };
+
+      ws.onmessage=(e)=>{
+        try{
+          const msg=JSON.parse(e.data);
+          if(msg.event!=='postgres_changes')return;
+          const change=msg.payload?.data;
+          if(!change)return;
+          const {eventType,record,old_record}=change;
+
+          if(eventType==='INSERT'&&record){
+            // Dedup — ak záznam už máme (napr. sme ho práve my vytvorili), ignoruj
+            if(allRecords.find(r=>r.id===record.id))return;
+            allRecords.unshift(record);
+            allRecords.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+            scheduleRender();
+
+          } else if(eventType==='UPDATE'&&record){
+            const idx=allRecords.findIndex(r=>r.id===record.id);
+            if(idx===-1)return;
+            allRecords[idx]=record;
+            scheduleRender();
+            // Ak je otvorený detail tohto záznamu — patch priamo, bez re-render celého listu
+            if(currentDetail&&currentDetail.id===record.id){
+              currentDetail=record;
+              const detailPanel=document.getElementById('detailPanel');
+              if(detailPanel&&detailPanel.style.display!=='none')openDetail(record);
+            }
+
+          } else if(eventType==='DELETE'&&old_record){
+            // Undo guard — ak je záznam v pendingDelete (práve sme ho my zmazali), ignoruj
+            if(pendingDelete.find(r=>r.id===old_record.id))return;
+            allRecords=allRecords.filter(r=>r.id!==old_record.id);
+            scheduleRender();
+            // Ak je otvorený detail zmazaného záznamu — vráť sa späť
+            if(currentDetail&&currentDetail.id===old_record.id){
+              goBack();
+              showToast('Záznam bol vymazaný iným používateľom');
+            }
+          }
+        }catch(err){}
+      };
+
+      ws.onerror=()=>{};
+      ws.onclose=()=>{
+        clearInterval(pingInterval);
+        document.getElementById('dotAI').className='sys-dot dim';
+        reconnectTimer=setTimeout(connect,5000);
+      };
+    }catch(err){}
+  }
+
+  connect();
+
+  window.addEventListener('beforeunload',()=>{
+    clearInterval(pingInterval);
+    clearTimeout(reconnectTimer);
+    clearTimeout(_renderTimer);
+    if(ws)ws.close();
+  });
+}
 </script>
 <script>
 if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{});});}
