@@ -148,7 +148,7 @@
       margin-bottom: 0;
     }
     .detail-drawer.open {
-      max-height: 600px;
+      max-height: 2000px;
       opacity: 1;
       margin-bottom: 10px;
     }
@@ -169,6 +169,15 @@
       margin-bottom: 8px;
     }
     .drawer-task-list { display: flex; flex-direction: column; gap: 5px; }
+    .drawer-task-text {
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      overflow: hidden; transition: none;
+    }
+    .drawer-task-text.expanded {
+      display: block; overflow: visible;
+    }
+    .drawer-tasks-hidden { display: none; }
+    .drawer-tasks-hidden.visible { display: contents; }
     .drawer-task {
       display: flex; align-items: flex-start; gap: 8px;
       font-size: 12px; padding: 7px 10px;
@@ -680,6 +689,25 @@ function renderDrawerContent(drawerId) {
 }
 
 // ─── DRAWER: Otvorené úlohy ──────────────────────────────────
+function buildTaskItem(item, showPerson) {
+  const pid = `dt_${item.rid}_${item.field}_${item.idx}`;
+  const person = showPerson ? `<span class="drawer-task-person ${item.cls}">${item.label}</span>` : '';
+  return `<div class="drawer-task ${item.cls}-task" id="${pid}" onclick="toggleDrawerTask(event,'${item.rid}','${item.field}',${item.idx})">
+    <span class="drawer-task-icon">❌</span>
+    <div style="flex:1;min-width:0">
+      <div class="drawer-task-text" id="${pid}_txt" onclick="expandDrawerText(event,'${pid}_txt')">${escHtml(item.text)}</div>
+      <div class="drawer-task-from">${escHtml(item.co||'—')} · ${item.datum||'—'}</div>
+    </div>
+    ${person}
+  </div>`;
+}
+
+function expandDrawerText(e, txtId) {
+  e.stopPropagation();
+  const el = document.getElementById(txtId);
+  if (el) el.classList.toggle('expanded');
+}
+
 function renderDrawerOpen(el) {
   const items = [];
   allRecords.forEach(r => {
@@ -694,6 +722,7 @@ function renderDrawerOpen(el) {
   const stCount = items.filter(i=>i.cls==='st').length;
   const szCount = items.filter(i=>i.cls==='sz').length;
   const total = stCount + szCount;
+  const LIMIT = 5;
 
   let html = `<div class="drawer-stat-row">
     <div class="drawer-stat"><div class="drawer-stat-val" style="color:var(--st)">${stCount}</div><div class="drawer-stat-lbl">Staubert</div></div>
@@ -704,21 +733,25 @@ function renderDrawerOpen(el) {
   if (!items.length) {
     html += `<div class="drawer-empty">✅ Všetky úlohy sú splnené!</div>`;
   } else {
-    html += `<div class="drawer-section-label">Najbližšie úlohy</div><div class="drawer-task-list">`;
-    items.slice(0, 6).forEach(item => {
-      html += `<div class="drawer-task ${item.cls}-task" id="dt_${item.rid}_${item.field}_${item.idx}" onclick="toggleDrawerTask(event,'${item.rid}','${item.field}',${item.idx})">
-        <span class="drawer-task-icon">❌</span>
-        <div style="flex:1;min-width:0">
-          <div>${escHtml(item.text)}</div>
-          <div class="drawer-task-from">${escHtml(item.co||'—')} · ${item.datum||'—'}</div>
-        </div>
-        <span class="drawer-task-person ${item.cls}">${item.label}</span>
-      </div>`;
-    });
-    html += `</div>`;
-    if (items.length > 6) html += `<button class="drawer-action" onclick="event.stopPropagation();showOpenTasksFromDash()">Zobraziť všetkých ${items.length} →</button>`;
+    html += `<div class="drawer-section-label">Otvorené úlohy</div><div class="drawer-task-list">`;
+    items.slice(0, LIMIT).forEach(item => { html += buildTaskItem(item, true); });
+    if (items.length > LIMIT) {
+      html += `</div><div class="drawer-tasks-hidden" id="drawerOpenExtra"><div class="drawer-task-list" style="margin-top:5px">`;
+      items.slice(LIMIT).forEach(item => { html += buildTaskItem(item, true); });
+      html += `</div></div>
+      <button class="drawer-action" id="drawerOpenShowAll" onclick="event.stopPropagation();drawerShowAll('drawerOpenExtra','drawerOpenShowAll',${items.length})">Zobraziť všetky (${items.length}) →</button>`;
+    }
+    html += items.length <= LIMIT ? `</div>` : ``;
   }
   el.innerHTML = html;
+}
+
+function drawerShowAll(extraId, btnId, total) {
+  const extra = document.getElementById(extraId);
+  const btn = document.getElementById(btnId);
+  if (!extra) return;
+  extra.classList.add('visible');
+  if (btn) btn.style.display = 'none';
 }
 
 function toggleDrawerTask(e, rid, field, idx) {
@@ -727,8 +760,9 @@ function toggleDrawerTask(e, rid, field, idx) {
   const el = document.getElementById(`dt_${rid}_${field}_${idx}`);
   if (el) { el.querySelector('.drawer-task-icon').textContent='✅'; el.style.opacity='0.4'; el.style.pointerEvents='none'; }
   updateDashboard();
-  // re-render drawer stats after short delay
-  setTimeout(() => { if (activeDrawer && activeDrawer.id === 'drawerOpen') renderDrawerContent('drawerOpen'); }, 400);
+  setTimeout(() => {
+    if (activeDrawer) renderDrawerContent(activeDrawer.id);
+  }, 400);
 }
 
 // ─── DRAWER: Kritické body ───────────────────────────────────
@@ -782,7 +816,7 @@ function renderDrawerPerson(el, name, field, cls) {
   allRecords.forEach(r => {
     const arr = r[field]; if (!Array.isArray(arr)) return;
     arr.forEach((item, i) => {
-      if (!getTaskDone(r.id, field, i)) items.push({rid:r.id, field, idx:i, text:item, datum:r.datum, co:r.co_sa_riesilo});
+      if (!getTaskDone(r.id, field, i)) items.push({rid:r.id, field, idx:i, cls, text:item, datum:r.datum, co:r.co_sa_riesilo});
     });
   });
 
@@ -793,6 +827,9 @@ function renderDrawerPerson(el, name, field, cls) {
   const total = items.length + done;
   const pct = total > 0 ? Math.round(done/total*100) : 100;
   const color = cls === 'st' ? 'var(--st)' : 'var(--sz)';
+  const drawerId = cls === 'st' ? 'drawerStExtra' : 'drawerSzExtra';
+  const btnId = cls === 'st' ? 'drawerStShowAll' : 'drawerSzShowAll';
+  const LIMIT = 5;
 
   let html = `<div class="drawer-stat-row">
     <div class="drawer-stat"><div class="drawer-stat-val" style="color:${color}">${items.length}</div><div class="drawer-stat-lbl">Otvorené</div></div>
@@ -805,17 +842,14 @@ function renderDrawerPerson(el, name, field, cls) {
     html += `<div class="drawer-empty" style="margin-top:12px">✅ ${name} nemá žiadne otvorené úlohy!</div>`;
   } else {
     html += `<div class="drawer-section-label" style="margin-top:12px">Otvorené úlohy</div><div class="drawer-task-list">`;
-    items.slice(0, 5).forEach(item => {
-      html += `<div class="drawer-task ${cls}-task" id="dt_${item.rid}_${item.field}_${item.idx}" onclick="toggleDrawerTask(event,'${item.rid}','${item.field}',${item.idx})">
-        <span class="drawer-task-icon">❌</span>
-        <div style="flex:1;min-width:0">
-          <div>${escHtml(item.text)}</div>
-          <div class="drawer-task-from">${escHtml(item.co||'—')} · ${item.datum||'—'}</div>
-        </div>
-      </div>`;
-    });
-    html += `</div>`;
-    if (items.length > 5) html += `<button class="drawer-action" onclick="event.stopPropagation();showOpenTasksFromDash()">Zobraziť všetky →</button>`;
+    items.slice(0, LIMIT).forEach(item => { html += buildTaskItem(item, false); });
+    if (items.length > LIMIT) {
+      html += `</div><div class="drawer-tasks-hidden" id="${drawerId}"><div class="drawer-task-list" style="margin-top:5px">`;
+      items.slice(LIMIT).forEach(item => { html += buildTaskItem(item, false); });
+      html += `</div></div>
+      <button class="drawer-action" id="${btnId}" onclick="event.stopPropagation();drawerShowAll('${drawerId}','${btnId}',${items.length})">Zobraziť všetky (${items.length}) →</button>`;
+    }
+    html += items.length <= LIMIT ? `</div>` : ``;
   }
   el.innerHTML = html;
 }
