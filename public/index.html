@@ -659,15 +659,12 @@ let taskStatusMap = {};
 
 function getTaskDone(rid, field, i) {
   const key = `${rid}__${field}__${i}`;
-  // Primárne Supabase state, fallback localStorage
-  if (taskStatusMap[key] !== undefined) return taskStatusMap[key] === true;
-  try { const s = JSON.parse(localStorage.getItem(LS_KEY)||'{}'); return s[key]===true; } catch(e) { return false; }
+  return taskStatusMap[key] === true;
 }
 
 async function setTaskDone(rid, field, i, done) {
   const key = `${rid}__${field}__${i}`;
   taskStatusMap[key] = done;
-  try { const s=JSON.parse(localStorage.getItem(LS_KEY)||'{}'); s[key]=done; localStorage.setItem(LS_KEY,JSON.stringify(s)); } catch(e) {}
   console.log('TASK UPSERT START', {rid:String(rid), field:String(field), i:Number(i), done:Boolean(done)});
   try {
     const body = JSON.stringify({
@@ -1350,13 +1347,27 @@ function initRealtime(){
         console.log('REALTIME TASK INSERT:', payload);
         const r=payload.new; if(!r)return;
         taskStatusMap[`${r.record_id}__${r.field}__${r.task_index}`]=r.done;
-        refreshTaskUI();
+        updateDashboard();
+        const hist=document.getElementById('historyPanel');
+        if(hist&&hist.style.display!=='none') renderList();
+        const openPanel=document.getElementById('openTasksPanel');
+        if(openPanel&&openPanel.style.display!=='none') renderOpenTasks();
+        if(activeDrawer) renderDrawerContent(activeDrawer.id);
+        const dp=document.getElementById('detailPanel');
+        if(dp&&dp.style.display!=='none'&&currentDetail) openDetail(currentDetail);
       })
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'task_status'},(payload)=>{
         console.log('REALTIME TASK UPDATE:', payload);
         const r=payload.new; if(!r)return;
         taskStatusMap[`${r.record_id}__${r.field}__${r.task_index}`]=r.done;
-        refreshTaskUI();
+        updateDashboard();
+        const hist=document.getElementById('historyPanel');
+        if(hist&&hist.style.display!=='none') renderList();
+        const openPanel=document.getElementById('openTasksPanel');
+        if(openPanel&&openPanel.style.display!=='none') renderOpenTasks();
+        if(activeDrawer) renderDrawerContent(activeDrawer.id);
+        const dp=document.getElementById('detailPanel');
+        if(dp&&dp.style.display!=='none'&&currentDetail) openDetail(currentDetail);
       })
       .subscribe((status)=>{
         console.log('REALTIME STATUS:', status);
