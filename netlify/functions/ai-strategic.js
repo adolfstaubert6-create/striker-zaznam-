@@ -2,12 +2,12 @@ const https = require('https');
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
+    return { statusCode: 405, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'Method Not Allowed' }) };
   }
 
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
   if (!OPENAI_API_KEY) {
-    return { statusCode: 500, body: JSON.stringify({ error: 'Chýba OPENAI_API_KEY' }) };
+    return { statusCode: 500, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'Chýba OPENAI_API_KEY' }) };
   }
 
   let records;
@@ -15,10 +15,10 @@ exports.handler = async (event) => {
     const body = JSON.parse(event.body);
     records = body.records;
     if (!Array.isArray(records) || records.length === 0) {
-      return { statusCode: 400, body: JSON.stringify({ error: 'Žiadne záznamy' }) };
+      return { statusCode: 400, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'Žiadne záznamy' }) };
     }
   } catch (e) {
-    return { statusCode: 400, body: JSON.stringify({ error: 'Neplatný JSON' }) };
+    return { statusCode: 400, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'Neplatný JSON' }) };
   }
 
   const today = new Date().toISOString().slice(0, 10);
@@ -64,7 +64,7 @@ ${problemTexts.length ? problemTexts.map((p, i) => `  ${i + 1}. ${p}`).join('\n'
 
   const recordsText = [...records]
     .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
-    .slice(0, 30)
+    .slice(0, 20)
     .map((r, i) => {
       const ulohy_s = Array.isArray(r.ulohy_staubert) ? r.ulohy_staubert.join(' | ') : (r.ulohy_staubert || '—');
       const ulohy_sz = Array.isArray(r.ulohy_szabo) ? r.ulohy_szabo.join(' | ') : (r.ulohy_szabo || '—');
@@ -77,67 +77,38 @@ ${problemTexts.length ? problemTexts.map((p, i) => `  ${i + 1}. ${p}`).join('\n'
   Ďalší krok: ${r.dalsi_krok || '—'}`;
     }).join('\n\n');
 
-  const systemPrompt = `Si strategický poradca projektu STRIKER. Nepíšeš operačný denný report — píšeš strategický briefing pre vedenie projektu.
+  const systemPrompt = `Si strategický poradca projektu STRIKER. Píšeš strategický briefing pre vedenie projektu.
 
 KONTEXT:
-- STRIKER je interný riadiaci a záznamový systém malého tímu
+- STRIKER je interný riadiaci systém malého tímu
 - STAUBERT: operačný líder, koordinácia a rozhodnutia
 - SZABÓ: výkonný člen, realizácia úloh
-- Projekt je vo vývoji — budujú sa funkcie, workflow, AI integrácia
-
-TVOJA ROLA:
-Si kritický, ale konštruktívny strategický poradca. Tvoja úloha je:
-1. Vyhodnotiť či projekt ide správnym smerom z dlhodobého pohľadu
-2. Identifikovať technický dlh, zbytočnú komplexitu, slepé uličky
-3. Určiť čo má najvyšší ROI a čo je strata času
-4. Povedať jasne čo robiť a čo nerobiť
-5. Myslieť v horizonte týždňov a mesiacov, nie dní
 
 PRAVIDLÁ:
-- Nie si motivačný rečník — povieš aj nepríjemné pravdy
-- Nie si dramatický — nadsádzaš nič
-- Si vecný a konkrétny — žiadne všeobecné frázy
+- Vecný, konkrétny, žiadne všeobecné frázy
 - Hodnotíš trend a smer, nie len aktuálny deň
-- Jazyk: slovenčina`;
+- Jazyk: slovenčina
+- Každá sekcia max 3-4 vety`;
 
   const userPrompt = `${statsBlock}
 
-ZÁZNAMY (posledných 30, od najnovšieho):
+ZÁZNAMY (posledných 20):
 ${recordsText}
 
 ---
 
-Vytvor "AI Strategický briefing – STRIKER" presne v tomto formáte:
+Vytvor "AI Strategický briefing – STRIKER" v tomto formáte:
 
 ## 🧭 Strategický súhrn
-(3–4 vety: celkové strategické hodnotenie projektu)
-
 ## 📈 Smer projektu
-(Ide projekt správnym smerom? Je fokus jasný alebo rozptýlený?)
-
 ## ⚙️ Technický stav a technický dlh
-(Kde sa hromadí technický dlh? Čo treba upratať?)
-
 ## 💰 ROI a priorita práce
-(Čo má najvyššiu hodnotu? Čo je zbytočná práca?)
-
 ## ⚠️ Dlhodobé riziká
-(Čo môže projekt zablokovať v horizonte 1–3 mesiacov?)
-
 ## 🔁 Opakujúce sa vzory
-(Čo sa opakuje? Čo to hovorí o projekte?)
-
 ## 👥 Tím a kapacita
-(Ako efektívne pracuje tím? Je rozdelenie práce optimálne?)
-
 ## 🚫 Čo nerobiť teraz
-(Konkrétne veci ktoré by mali počkať)
-
 ## 🎯 Strategické priority na najbližších 7 dní
-(3–5 strategických priorít — nie operačné úlohy, ale smer)
-
-## 🧠 AI strategické odporúčanie
-(2–3 vety: hlavné strategické odporúčanie pre dlhodobý úspech)`;
+## 🧠 AI strategické odporúčanie`;
 
   const requestBody = JSON.stringify({
     model: 'gpt-4o',
@@ -145,9 +116,14 @@ Vytvor "AI Strategický briefing – STRIKER" presne v tomto formáte:
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt }
     ],
-    max_tokens: 3500,
+    max_tokens: 1800,
     temperature: 0.5
   });
+
+  const safeJson = (body) => {
+    try { return { ok: true, data: JSON.parse(body) }; }
+    catch (e) { return { ok: false, raw: body.slice(0, 300) }; }
+  };
 
   try {
     const result = await new Promise((resolve, reject) => {
@@ -161,19 +137,41 @@ Vytvor "AI Strategický briefing – STRIKER" presne v tomto formáte:
           'Content-Length': Buffer.byteLength(requestBody)
         }
       };
+
       const req = https.request(options, (res) => {
         let data = '';
         res.on('data', chunk => data += chunk);
         res.on('end', () => resolve({ status: res.statusCode, body: data }));
       });
+
+      req.setTimeout(25000, () => {
+        req.destroy();
+        reject(new Error('OpenAI timeout po 25s'));
+      });
+
       req.on('error', reject);
       req.write(requestBody);
       req.end();
     });
 
-    const json = JSON.parse(result.body);
+    const parsed = safeJson(result.body);
+
+    if (!parsed.ok) {
+      return {
+        statusCode: 500,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'OpenAI vrátila neplatný JSON', raw: parsed.raw })
+      };
+    }
+
+    const json = parsed.data;
+
     if (result.status !== 200) {
-      return { statusCode: 500, body: JSON.stringify({ error: json.error?.message || 'OpenAI chyba' }) };
+      return {
+        statusCode: 500,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: json.error?.message || 'OpenAI chyba ' + result.status })
+      };
     }
 
     const report = json.choices?.[0]?.message?.content || 'Report sa nepodarilo vygenerovať.';
@@ -184,6 +182,10 @@ Vytvor "AI Strategický briefing – STRIKER" presne v tomto formáte:
     };
 
   } catch (e) {
-    return { statusCode: 500, body: JSON.stringify({ error: e.message }) };
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: e.message || 'Neznáma chyba' })
+    };
   }
 };
