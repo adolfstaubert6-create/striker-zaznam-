@@ -71,23 +71,78 @@ function addConsultMsg(role, text){
   return div;
 }
 
-function speakText(text, btn){
-  if(!window.speechSynthesis)return;
-  if(window.speechSynthesis.speaking){
+var _currentAudio=null;
+
+function stopSpeaking(){
+  if(_currentAudio){
+    _currentAudio.pause();
+    _currentAudio=null;
+  }
+  if(window.speechSynthesis&&window.speechSynthesis.speaking){
     window.speechSynthesis.cancel();
+  }
+  if(typeof setAiState==='function')setAiState('idle');
+  if(typeof aiWave==='function')aiWave(false);
+}
+
+async function speakText(text, btn){
+  if(_currentAudio){
+    stopSpeaking();
     if(btn)btn.textContent='🔊';
-    if(typeof setAiState==='function')setAiState('idle');
     return;
   }
+  if(window.speechSynthesis&&window.speechSynthesis.speaking){
+    window.speechSynthesis.cancel();
+    if(btn)btn.textContent='🔊';
+    return;
+  }
+
+  if(btn)btn.textContent='⏹';
+  if(typeof setAiState==='function')setAiState('speaking');
+  if(typeof aiWave==='function')aiWave(true);
+
+  try{
+    const res=await fetch('/.netlify/functions/ai-tts',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({text:text})
+    });
+
+    if(!res.ok)throw new Error('TTS API chyba');
+
+    const arrayBuffer=await res.arrayBuffer();
+    const blob=new Blob([arrayBuffer],{type:'audio/mpeg'});
+    const url=URL.createObjectURL(blob);
+    const audio=new Audio(url);
+    _currentAudio=audio;
+
+    audio.onended=()=>{
+      _currentAudio=null;
+      URL.revokeObjectURL(url);
+      if(btn)btn.textContent='🔊';
+      if(typeof setAiState==='function')setAiState('idle');
+      if(typeof aiWave==='function')aiWave(false);
+    };
+    audio.onerror=()=>{
+      _currentAudio=null;
+      URL.revokeObjectURL(url);
+      if(btn)btn.textContent='🔊';
+      speakFallback(text, btn);
+    };
+    await audio.play();
+
+  }catch(e){
+    if(typeof aiLog==='function')aiLog('[TTS] OpenAI zlyhalo, fallback...');
+    speakFallback(text, btn);
+  }
+}
+
+function speakFallback(text, btn){
+  if(!window.speechSynthesis)return;
   const utt=new SpeechSynthesisUtterance(text);
   utt.lang='sk-SK';
   utt.rate=0.9;
   utt.pitch=0.85;
-  utt.onstart=()=>{
-    if(btn)btn.textContent='⏹';
-    if(typeof setAiState==='function')setAiState('speaking');
-    if(typeof aiWave==='function')aiWave(true);
-  };
   utt.onend=()=>{
     if(btn)btn.textContent='🔊';
     if(typeof setAiState==='function')setAiState('idle');
@@ -96,6 +151,7 @@ function speakText(text, btn){
   utt.onerror=()=>{
     if(btn)btn.textContent='🔊';
     if(typeof setAiState==='function')setAiState('idle');
+    if(typeof aiWave==='function')aiWave(false);
   };
   window.speechSynthesis.speak(utt);
 }
@@ -155,12 +211,14 @@ async function sendConsult(){
     consultHistory.push({role:'assistant', content:reply});
     aiLog('[AI] Response generated');
     loadConsultSidebar();
+    try{speakText(reply,null);}catch(e){if(typeof aiLog!=='undefined')aiLog('[TTS] '+e.message);}
 
     // Limit histórie na 20 správ
     if(consultHistory.length>20) consultHistory=consultHistory.slice(-20);
 
   }catch(e){
     setAiState('error');
+    setTimeout(()=>setAiState('idle'), 3000);
     const thinking=document.getElementById('consultThinking');
     if(thinking)thinking.remove();
     const msgs=document.getElementById('consultMessages');
