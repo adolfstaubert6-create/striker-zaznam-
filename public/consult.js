@@ -220,13 +220,21 @@ async function processAudio(){
   const btn=getMicBtn();
   try{
     const blob=new Blob(_audioChunks,{type:'audio/webm'});
-    const arrayBuffer=await blob.arrayBuffer();
-    const base64=btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    const reader=new FileReader();
+    const base64=await new Promise((resolve,reject)=>{
+      reader.onload=()=>{
+        const result=reader.result;
+        const b64=result.includes(',') ? result.split(',')[1] : result;
+        resolve(b64);
+      };
+      reader.onerror=reject;
+      reader.readAsDataURL(blob);
+    });
 
     const res=await fetch('/.netlify/functions/ai-stt',{
       method:'POST',
-      headers:{'Content-Type':'text/plain'},
-      body:base64
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({audio:base64})
     });
 
     const data=await res.json();
@@ -235,15 +243,16 @@ async function processAudio(){
     if(typeof aiLog==='function')aiLog('[STT] "'+data.text.slice(0,40)+'"');
 
     const input=document.getElementById('consultInput');
-    if(input){
-      input.value=data.text;
-      input.dispatchEvent(new Event('input'));
+    if(input&&data.text&&data.text.trim()){
+      input.value=data.text.trim();
     }
 
     if(typeof setAiState==='function')setAiState('idle');
     if(btn){btn.textContent='🎤';btn.style.background='transparent';btn.style.color='';}
 
-    sendConsult();
+    if(data.text&&data.text.trim()){
+      setTimeout(()=>sendConsult(), 100);
+    }
 
   }catch(e){
     if(typeof showToast==='function')showToast('STT chyba: '+e.message);
