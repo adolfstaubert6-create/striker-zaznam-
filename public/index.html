@@ -280,7 +280,8 @@
           <div class="consult-msg system">AI agent je pripravený. Opýtajte sa na priority, riziká, úlohy alebo ďalší smer projektu.</div>
         </div>
         <div class="consult-input-row">
-          <textarea class="consult-input" id="consultInput" placeholder="Napíšte otázku... (Enter = odoslať)" rows="1" onkeydown="consultKeydown(event)"></textarea>
+          <button id="micBtn" onclick="toggleVoice()" title="Hlasový vstup" style="background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:10px 12px;cursor:pointer;font-size:16px;transition:all .2s;flex-shrink:0">🎤</button>
+          <textarea class="consult-input" id="consultInput" placeholder="Napíšte alebo hovorte... (Enter = odoslať)" rows="1" onkeydown="consultKeydown(event)"></textarea>
           <button class="consult-send" id="consultSend" onclick="sendConsult()">↑</button>
         </div>
       </div>
