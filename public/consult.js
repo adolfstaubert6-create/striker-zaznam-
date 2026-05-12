@@ -42,9 +42,48 @@ function addConsultMsg(role, text){
   body.textContent=text;
   div.appendChild(label);
   div.appendChild(body);
+  if(role==='ai'){
+    const ttsBtn=document.createElement('button');
+    ttsBtn.textContent='🔊';
+    ttsBtn.title='Prečítať nahlas';
+    ttsBtn.style.cssText='background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted);margin-top:6px;padding:0;opacity:.5;transition:opacity .2s';
+    ttsBtn.addEventListener('mouseenter',()=>ttsBtn.style.opacity='1');
+    ttsBtn.addEventListener('mouseleave',()=>ttsBtn.style.opacity='.5');
+    ttsBtn.addEventListener('click',()=>speakText(text, ttsBtn));
+    div.appendChild(ttsBtn);
+  }
   msgs.appendChild(div);
   msgs.scrollTop=msgs.scrollHeight;
   return div;
+}
+
+function speakText(text, btn){
+  if(!window.speechSynthesis)return;
+  if(window.speechSynthesis.speaking){
+    window.speechSynthesis.cancel();
+    if(btn)btn.textContent='🔊';
+    if(typeof setAiState==='function')setAiState('idle');
+    return;
+  }
+  const utt=new SpeechSynthesisUtterance(text);
+  utt.lang='sk-SK';
+  utt.rate=0.9;
+  utt.pitch=0.85;
+  utt.onstart=()=>{
+    if(btn)btn.textContent='⏹';
+    if(typeof setAiState==='function')setAiState('speaking');
+    if(typeof aiWave==='function')aiWave(true);
+  };
+  utt.onend=()=>{
+    if(btn)btn.textContent='🔊';
+    if(typeof setAiState==='function')setAiState('idle');
+    if(typeof aiWave==='function')aiWave(false);
+  };
+  utt.onerror=()=>{
+    if(btn)btn.textContent='🔊';
+    if(typeof setAiState==='function')setAiState('idle');
+  };
+  window.speechSynthesis.speak(utt);
 }
 
 function addThinking(){
