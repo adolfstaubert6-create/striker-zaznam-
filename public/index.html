@@ -250,6 +250,34 @@
       height: 100%; border-radius: 2px; transition: width .5s ease;
     }
 
+
+    /* ─── AI KONZULTAČNÝ PANEL ─── */
+    #consultPanel { display: none; }
+    .consult-header { background: var(--surface); border: 1px solid var(--sz-border); border-radius: 8px; padding: 14px 16px; margin-bottom: 14px; border-top: 2px solid var(--sz); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+    .consult-header-title { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--sz); }
+    .consult-header-sub { font-size: 11px; color: var(--muted); font-family: "IBM Plex Mono", monospace; }
+    .consult-messages { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; max-height: 420px; overflow-y: auto; }
+    .consult-msg { padding: 10px 14px; border-radius: 8px; font-size: 13px; line-height: 1.6; }
+    .consult-msg.user { background: var(--accent-dim); border: 1px solid rgba(232,255,0,.15); color: var(--text); align-self: flex-end; max-width: 85%; }
+    .consult-msg.ai { background: var(--sz-dim); border: 1px solid var(--sz-border); color: var(--text); align-self: flex-start; max-width: 95%; white-space: pre-wrap; }
+    .consult-msg.system { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 11px; text-align: center; }
+    .consult-msg-label { font-family: "IBM Plex Mono", monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+    .consult-msg.user .consult-msg-label { color: var(--accent); }
+    .consult-msg.ai .consult-msg-label { color: var(--sz); }
+    .consult-input-row { display: flex; gap: 8px; align-items: flex-end; }
+    .consult-input { flex: 1; background: var(--surface); border: 1px solid var(--border); color: var(--text); font-family: "IBM Plex Sans", sans-serif; font-size: 13px; padding: 10px 14px; border-radius: 8px; outline: none; resize: none; min-height: 44px; max-height: 120px; line-height: 1.5; transition: border-color .2s; }
+    .consult-input:focus { border-color: var(--sz); }
+    .consult-input::placeholder { color: var(--muted); }
+    .consult-send { background: var(--sz); color: #000; border: none; padding: 10px 18px; border-radius: 8px; font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 600; cursor: pointer; transition: opacity .15s; white-space: nowrap; }
+    .consult-send:disabled { opacity: .4; cursor: not-allowed; }
+    .consult-clear { background: transparent; border: 1px solid var(--border); color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 11px; padding: 7px 12px; border-radius: 6px; cursor: pointer; transition: all .15s; }
+    .consult-clear:hover { border-color: var(--danger); color: var(--danger); }
+    .consult-thinking { display: flex; gap: 4px; align-items: center; padding: 8px 0; }
+    .consult-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sz); animation: consultPulse 1.2s ease-in-out infinite; }
+    .consult-dot:nth-child(2) { animation-delay: .2s; }
+    .consult-dot:nth-child(3) { animation-delay: .4s; }
+    @keyframes consultPulse { 0%,100% { opacity: .3; transform: scale(.8); } 50% { opacity: 1; transform: scale(1); } }
+
     /* ─── FORMS ─── */
     h2 { font-size: 11px; font-weight: 400; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px; }
     textarea { width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--text); font-family: 'IBM Plex Sans', sans-serif; font-size: 15px; line-height: 1.6; padding: 16px; border-radius: 8px; resize: vertical; min-height: 160px; outline: none; transition: border-color .2s; }
@@ -537,6 +565,7 @@
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           <button class="btn-ai" onclick="showTab('history',document.querySelectorAll('.tab')[2]);setTimeout(createAiReport,100)">🧠 Operačný report</button>
           <button class="btn-ai" style="border-color:var(--sz);color:var(--sz)" onmouseover="this.style.background='var(--sz)';this.style.color='#000'" onmouseout="this.style.background='transparent';this.style.color='var(--sz)'" onclick="createStrategicReport()">🔭 Strategický briefing</button>
+          <button class="btn-ai" style="border-color:#8b5cf6;color:#8b5cf6" onmouseover="this.style.background='#8b5cf6';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='#8b5cf6'" onclick="showConsult()">🤖 AI konzultácia</button>
         </div>
       </div>
     </div>
@@ -560,6 +589,7 @@
       <button class="btn-tasks" onclick="showOpenTasks()">❌ Úlohy</button>
       <button class="btn-ai" id="btnAiReport" onclick="createAiReport()">🧠 AI report</button>
       <button class="btn-ai" id="btnStrategic" onclick="createStrategicReport()" style="border-color:var(--sz);color:var(--sz)">🔭 Strategický</button>
+      <button class="btn-sm" onclick="showConsult()" style="border-color:#8b5cf6;color:#8b5cf6">🤖 AI</button>
       <span class="selected-count" id="selectedCount"></span>
     </div>
     <div id="recordsList"></div>
@@ -616,6 +646,27 @@
       <span class="report-header-sub" id="strategicMeta"></span>
     </div>
     <div class="report-body" id="strategicBody"></div>
+  </div>
+
+  <!-- ── AI KONZULTÁCIA ── -->
+  <div id="consultPanel">
+    <div class="consult-header">
+      <div>
+        <div class="consult-header-title">🤖 AI Strategický agent – STRIKER</div>
+        <div class="consult-header-sub">Konzultácia s plným kontextom projektu</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="consult-clear" onclick="clearConsult()">🗑 Vymazať</button>
+        <button class="btn-sm" onclick="goBackFromConsult()">⬅ Späť</button>
+      </div>
+    </div>
+    <div class="consult-messages" id="consultMessages">
+      <div class="consult-msg system">AI agent je pripravený. Opýtajte sa na priority, riziká, úlohy alebo ďalší smer projektu.</div>
+    </div>
+    <div class="consult-input-row">
+      <textarea class="consult-input" id="consultInput" placeholder="Napíšte otázku... (Enter = odoslať, Shift+Enter = nový riadok)" rows="1" onkeydown="consultKeydown(event)"></textarea>
+      <button class="consult-send" id="consultSend" onclick="sendConsult()">Odoslať ↑</button>
+    </div>
   </div>
 
   <!-- ── OPEN TASKS ── -->
@@ -1007,7 +1058,7 @@ function setDBStatus(ok){
 }
 
 // ── PANELS ──
-function hideAllPanels(){['dashboardPanel','newPanel','historyPanel','detailPanel','reportPanel','strategicPanel','openTasksPanel'].forEach(id=>document.getElementById(id).style.display='none');}
+function hideAllPanels(){['dashboardPanel','newPanel','historyPanel','detailPanel','reportPanel','strategicPanel','consultPanel','openTasksPanel'].forEach(id=>document.getElementById(id).style.display='none');}
 function showTab(tab,el){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   if(el)el.classList.add('active');
@@ -1171,6 +1222,113 @@ async function createStrategicReport(){
 }
 function goBackFromStrategic(){hideAllPanels();document.getElementById('historyPanel').style.display='block';document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');if(i===2)t.classList.add('active');});}
 function copyStrategic(){if(!lastStrategic){showToast('Žiadny report');return;}navigator.clipboard.writeText(lastStrategicMeta+'\n\n'+lastStrategic).then(()=>showToast('Skopírovaný')).catch(()=>showToast('Chyba'));}
+
+// ── AI KONZULTÁCIA ──
+let consultHistory = [];
+
+function showConsult(){
+  hideAllPanels();
+  document.getElementById('consultPanel').style.display='block';
+  document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');if(i===2)t.classList.add('active');});
+  setTimeout(()=>document.getElementById('consultInput').focus(),100);
+}
+
+function goBackFromConsult(){
+  hideAllPanels();
+  document.getElementById('historyPanel').style.display='block';
+  document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');if(i===2)t.classList.add('active');});
+}
+
+function clearConsult(){
+  consultHistory=[];
+  const msgs=document.getElementById('consultMessages');
+  msgs.innerHTML='<div class="consult-msg system">Konverzácia vymazaná. AI agent je pripravený.</div>';
+}
+
+function consultKeydown(e){
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendConsult();}
+}
+
+function addConsultMsg(role, text){
+  const msgs=document.getElementById('consultMessages');
+  const div=document.createElement('div');
+  div.className='consult-msg '+role;
+  const label=document.createElement('div');
+  label.className='consult-msg-label';
+  label.textContent=role==='user'?'Vy':'AI Agent';
+  const body=document.createElement('div');
+  body.textContent=text;
+  div.appendChild(label);
+  div.appendChild(body);
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+  return div;
+}
+
+function addThinking(){
+  const msgs=document.getElementById('consultMessages');
+  const div=document.createElement('div');
+  div.className='consult-msg ai';
+  div.id='consultThinking';
+  div.innerHTML='<div class="consult-thinking"><div class="consult-dot"></div><div class="consult-dot"></div><div class="consult-dot"></div></div>';
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+async function sendConsult(){
+  const input=document.getElementById('consultInput');
+  const btn=document.getElementById('consultSend');
+  const text=input.value.trim();
+  if(!text)return;
+  if(!allRecords.length){showToast('Najprv načítaj históriu');return;}
+
+  input.value='';
+  input.style.height='auto';
+  btn.disabled=true;
+
+  addConsultMsg('user', text);
+  consultHistory.push({role:'user', content:text});
+
+  addThinking();
+
+  try{
+    const res=await fetch('/.netlify/functions/ai-consult',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        records:allRecords,
+        messages:consultHistory,
+        taskStatus:taskStatusMap
+      })
+    });
+    const data=await res.json();
+    const thinking=document.getElementById('consultThinking');
+    if(thinking)thinking.remove();
+
+    if(!res.ok)throw new Error(data.error||'Chyba');
+
+    const reply=data.reply;
+    addConsultMsg('ai', reply);
+    consultHistory.push({role:'assistant', content:reply});
+
+    // Limit histórie na 20 správ
+    if(consultHistory.length>20) consultHistory=consultHistory.slice(-20);
+
+  }catch(e){
+    const thinking=document.getElementById('consultThinking');
+    if(thinking)thinking.remove();
+    const msgs=document.getElementById('consultMessages');
+    const err=document.createElement('div');
+    err.className='consult-msg system';
+    err.textContent='✗ '+e.message;
+    err.style.color='var(--danger)';
+    msgs.appendChild(err);
+    msgs.scrollTop=msgs.scrollHeight;
+  }finally{
+    btn.disabled=false;
+    input.focus();
+  }
+}
 // ── NEW ENTRY ──
 async function spracovat(){
   const text=document.getElementById('inputText').value.trim();
