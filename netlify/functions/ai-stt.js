@@ -10,65 +10,64 @@ exports.handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ error: 'Chýba OPENAI_API_KEY' }) };
   }
 
-  let text;
   try {
-    const body = JSON.parse(event.body);
-    text = body.text || '';
-  } catch (e) {
-    return { statusCode: 400, body: JSON.stringify({ error: 'Neplatný JSON' }) };
-  }
+    let audioBase64;
+    try {
+      const body = JSON.parse(event.body);
+      audioBase64 = body.audio;
+    } catch(e) {
+      audioBase64 = event.body;
+    }
 
-  if (!text || text.length > 4000) {
-    return { statusCode: 400, body: JSON.stringify({ error: 'Neplatný text' }) };
-  }
+    if (!audioBase64) {
+      return { statusCode: 400, body: JSON.stringify({ error: 'Chýba audio' }) };
+    }
 
-  const requestBody = JSON.stringify({
-    model: 'tts-1',
-    input: text,
-    voice: 'nova',
-    response_format: 'mp3',
-    speed: 0.95
-  });
+    const audioBuffer = Buffer.from(audioBase64, 'base64');
+    const boundary = '----FormBoundary' + Date.now().toString(16);
 
-  try {
-    const audioBuffer = await new Promise((resolve, reject) => {
+    const formParts = [];
+    formParts.push(Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="model"\r\n\r\nwhisper-1\r\n`));
+    formParts.push(Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="language"\r\n\r\nsk\r\n`));
+    formParts.push(Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="audio.webm"\r\nContent-Type: audio/webm\r\n\r\n`));
+    formParts.push(audioBuffer);
+    formParts.push(Buffer.from(`\r\n--${boundary}--\r\n`));
+
+    const formBody = Buffer.concat(formParts);
+
+    const result = await new Promise((resolve, reject) => {
       const options = {
         hostname: 'api.openai.com',
-        path: '/v1/audio/speech',
+        path: '/v1/audio/transcriptions',
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          'Content-Length': Buffer.byteLength(requestBody)
+          'Content-Type': `multipart/form-data; boundary=${boundary}`,
+          'Content-Length': formBody.length
         }
       };
 
       const req = https.request(options, (res) => {
-        const chunks = [];
-        res.on('data', chunk => chunks.push(chunk));
-        res.on('end', () => {
-          if (res.statusCode !== 200) {
-            reject(new Error(`OpenAI TTS error: ${res.statusCode}`));
-          } else {
-            resolve(Buffer.concat(chunks));
-          }
-        });
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => resolve({ status: res.statusCode, body: data }));
       });
 
       req.setTimeout(20000, () => { req.destroy(); reject(new Error('Timeout')); });
       req.on('error', reject);
-      req.write(requestBody);
+      req.write(formBody);
       req.end();
     });
 
+    const parsed = JSON.parse(result.body);
+    if (result.status !== 200) {
+      return { statusCode: 500, body: JSON.stringify({ error: parsed.error?.message || 'Whisper chyba' }) };
+    }
+
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'audio/mpeg',
-        'Content-Length': audioBuffer.length.toString()
-      },
-      body: audioBuffer.toString('base64'),
-      isBase64Encoded: true
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: parsed.text || '' })
     };
 
   } catch (e) {
