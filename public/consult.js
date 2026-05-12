@@ -168,6 +168,91 @@ function addThinking(){
 
 let currentConsultationId=null;
 
+
+// ── VOICE INPUT (Whisper STT) ──
+var _mediaRecorder=null;
+var _audioChunks=[];
+var _isRecording=false;
+
+function getMicBtn(){return document.getElementById('micBtn');}
+
+async function toggleVoice(){
+  if(_isRecording){
+    stopRecording();
+  } else {
+    await startRecording();
+  }
+}
+
+async function startRecording(){
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    _audioChunks=[];
+    _mediaRecorder=new MediaRecorder(stream,{mimeType:'audio/webm'});
+    _mediaRecorder.ondataavailable=e=>{if(e.data.size>0)_audioChunks.push(e.data);};
+    _mediaRecorder.onstop=async()=>{
+      stream.getTracks().forEach(t=>t.stop());
+      await processAudio();
+    };
+    _mediaRecorder.start();
+    _isRecording=true;
+    const btn=getMicBtn();
+    if(btn){btn.textContent='⏹';btn.style.background='var(--danger)';btn.style.color='#fff';}
+    if(typeof setAiState==='function')setAiState('syncing');
+    if(typeof aiLog==='function')aiLog('[STT] Nahrávam...');
+  }catch(e){
+    if(typeof showToast==='function')showToast('Mikrofón nie je dostupný');
+    if(typeof aiLog==='function')aiLog('[STT] Chyba: '+e.message);
+  }
+}
+
+function stopRecording(){
+  if(_mediaRecorder&&_isRecording){
+    _mediaRecorder.stop();
+    _isRecording=false;
+    const btn=getMicBtn();
+    if(btn){btn.textContent='⏳';btn.style.background='var(--muted)';btn.style.color='#000';}
+    if(typeof setAiState==='function')setAiState('thinking');
+  }
+}
+
+async function processAudio(){
+  const btn=getMicBtn();
+  try{
+    const blob=new Blob(_audioChunks,{type:'audio/webm'});
+    const arrayBuffer=await blob.arrayBuffer();
+    const base64=btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+
+    const res=await fetch('/.netlify/functions/ai-stt',{
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      body:base64
+    });
+
+    const data=await res.json();
+    if(!res.ok||!data.text)throw new Error(data.error||'STT chyba');
+
+    if(typeof aiLog==='function')aiLog('[STT] "'+data.text.slice(0,40)+'"');
+
+    const input=document.getElementById('consultInput');
+    if(input){
+      input.value=data.text;
+      input.dispatchEvent(new Event('input'));
+    }
+
+    if(typeof setAiState==='function')setAiState('idle');
+    if(btn){btn.textContent='🎤';btn.style.background='transparent';btn.style.color='';}
+
+    sendConsult();
+
+  }catch(e){
+    if(typeof showToast==='function')showToast('STT chyba: '+e.message);
+    if(typeof aiLog==='function')aiLog('[STT] Chyba: '+e.message);
+    if(typeof setAiState==='function')setAiState('idle');
+    if(btn){btn.textContent='🎤';btn.style.background='transparent';btn.style.color='';}
+  }
+}
+
 async function sendConsult(){
   const input=document.getElementById('consultInput');
   const btn=document.getElementById('consultSend');
