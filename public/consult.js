@@ -5,13 +5,27 @@
 // ── AI KONZULTÁCIA ──
 let consultHistory = [];
 
-function showConsult(){
+async function showConsult(){
   hideAllPanels();
   document.getElementById('consultPanel').style.display='block';
   document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');if(i===2)t.classList.add('active');});
   setTimeout(()=>document.getElementById('consultInput').focus(),100);
   initAiCore();
   loadConsultSidebar();
+  if(!allRecords.length){
+    try{
+      const res=await fetch(SUPABASE_URL+'/rest/v1/zaznam?select=*&order=created_at.desc',{
+        headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+      });
+      allRecords=await res.json();
+      if(typeof setDBStatus==='function')setDBStatus(true);
+      if(typeof loadTaskStatus==='function')await loadTaskStatus();
+      if(typeof updateDashboard==='function')updateDashboard();
+      if(typeof aiLog==='function')aiLog('[SYNC] Zaznamy nacitane: '+allRecords.length);
+    }catch(e){
+      if(typeof aiLog==='function')aiLog('[ERR] Chyba nacitania zaznamov');
+    }
+  }
 }
 
 function goBackFromConsult(){
