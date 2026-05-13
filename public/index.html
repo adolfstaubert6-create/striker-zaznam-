@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>STRIKER – Riadiace centrum</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#000000">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="STRIKER">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="apple-touch-icon" href="/icon-192x192.png">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">STRIKER <em>/ Riadiace centrum</em></div>
+  <div class="sys-row">
+    <div class="sys-item"><span class="sys-dot" id="dotDB"></span><span id="lblDB">DB</span></div>
+    <div class="sys-item"><span class="sys-dot dim" id="dotAI"></span><span>AI</span></div>
+    <div class="sys-item"><span class="sys-dot dim" id="dotPWA"></span><span>PWA</span></div>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- TABS -->
+  <div class="tabs" style="margin-top:16px">
+    <button class="tab active" onclick="showTab('dashboard',this)">⬛ Dashboard</button>
+    <button class="tab" onclick="showTab('new',this)">⚡ Nový vstup</button>
+    <button class="tab" onclick="showTab('history',this)">📋 História</button>
+  </div>
+
+  <!-- ── DASHBOARD ── -->
+  <div id="dashboardPanel">
+    <div class="dash-section-label">Operačný prehľad</div>
+
+    <!-- Row 1 -->
+    <div class="dash-row1">
+
+      <!-- Otvorené úlohy -->
+      <div>
+        <div class="dcard accent expandable" id="cardOpen" onclick="toggleDrawer('drawerOpen','cardOpen')">
+          <span class="dcard-chevron">▼</span>
+          <span class="dcard-icon">❌</span>
+          <div class="dcard-label">Otvorené úlohy</div>
+          <div class="dcard-value accent" id="dOpenTotal">–</div>
+          <div class="dcard-sub" id="dOpenSub">načítavam...</div>
+          <div class="split-bar">
+            <div class="split-bar-st" id="dSplitSt" style="width:50%"></div>
+            <div class="split-bar-sz" id="dSplitSz" style="width:50%"></div>
+          </div>
+        </div>
+        <div class="detail-drawer" id="drawerOpen">
+          <div class="detail-drawer-inner" id="drawerOpenContent"></div>
+        </div>
+      </div>
+
+      <!-- Kritické body -->
+      <div>
+        <div class="dcard danger expandable" id="cardCrit" onclick="toggleDrawer('drawerCrit','cardCrit')">
+          <span class="dcard-chevron">▼</span>
+          <span class="dcard-icon">⚠️</span>
+          <div class="dcard-label">Kritické body</div>
+          <div class="dcard-value" id="dCritVal" style="color:var(--danger)">–</div>
+          <div class="dcard-sub" id="dCritSub">záznamy s problémom</div>
+        </div>
+        <div class="detail-drawer" id="drawerCrit">
+          <div class="detail-drawer-inner" id="drawerCritContent"></div>
+        </div>
+      </div>
+
+      <!-- Dnešná aktivita -->
+      <div>
+        <div class="dcard expandable" id="cardToday" onclick="toggleDrawer('drawerToday','cardToday')">
+          <span class="dcard-chevron">▼</span>
+          <span class="dcard-icon">📅</span>
+          <div class="dcard-label">Dnes</div>
+          <div class="dcard-value" id="dTodayVal" style="color:var(--ok)">–</div>
+          <div class="dcard-sub" id="dTodaySub">–</div>
+        </div>
+        <div class="detail-drawer" id="drawerToday">
+          <div class="detail-drawer-inner" id="drawerTodayContent"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 2 -->
+    <div class="dash-row2">
+
+      <!-- Staubert -->
+      <div>
+        <div class="dcard person-st staubert expandable" id="cardSt" onclick="toggleDrawer('drawerSt','cardSt')">
+          <span class="dcard-chevron">▼</span>
+          <span class="dcard-icon">👤</span>
+          <div class="dcard-label">Staubert</div>
+          <div class="dcard-value" id="dStVal">–</div>
+          <div class="dcard-sub" id="dStSub">otvorených úloh</div>
+        </div>
+        <div class="detail-drawer" id="drawerSt">
+          <div class="detail-drawer-inner" id="drawerStContent"></div>
+        </div>
+      </div>
+
+      <!-- Szabó -->
+      <div>
+        <div class="dcard person-sz szabo expandable" id="cardSz" onclick="toggleDrawer('drawerSz','cardSz')">
+          <span class="dcard-chevron">▼</span>
+          <span class="dcard-icon">👤</span>
+          <div class="dcard-label">Szabó</div>
+          <div class="dcard-value" id="dSzVal">–</div>
+          <div class="dcard-sub" id="dSzSub">otvorených úloh</div>
+        </div>
+        <div class="detail-drawer" id="drawerSz">
+          <div class="detail-drawer-inner" id="drawerSzContent"></div>
+        </div>
+      </div>
+
+      <!-- Stav systému -->
+      <div>
+        <div class="sys-card ok expandable" id="cardSys" style="cursor:pointer" onclick="toggleDrawer('drawerSys','cardSys')">
+          <span class="dcard-chevron" style="position:absolute;top:14px;right:14px;font-size:10px;color:var(--muted);transition:transform .25s,color .2s;font-family:'IBM Plex Mono',monospace">▼</span>
+          <div class="sys-card-label">⚡ Stav systému</div>
+          <div class="sys-lines">
+            <div class="sys-line">
+              <span class="sys-line-name">Supabase</span>
+              <span class="sys-line-val ok" id="sysDB">–</span>
+            </div>
+            <div class="sys-line">
+              <span class="sys-line-name">AI Claude</span>
+              <span class="sys-line-val ok" id="sysAI">OK</span>
+            </div>
+            <div class="sys-line">
+              <span class="sys-line-name">PWA</span>
+              <span class="sys-line-val" id="sysPWA">–</span>
+            </div>
+            <div class="sys-line">
+              <span class="sys-line-name">Záznamy</span>
+              <span class="sys-line-val ok" id="sysTotal">–</span>
+            </div>
+          </div>
+        </div>
+        <div class="detail-drawer" id="drawerSys">
+          <div class="detail-drawer-inner" id="drawerSysContent"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Report row -->
+    <div class="dcard" style="margin-bottom:8px;cursor:default">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <div>
+          <div class="dcard-label" style="margin-bottom:4px">🧠 Posledný AI report</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text)" id="dReportVal">Nebol generovaný</div>
+          <div class="dcard-sub" id="dReportSub" style="margin-top:3px">–</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn-ai" onclick="showTab('history',document.querySelectorAll('.tab')[2]);setTimeout(createAiReport,100)">🧠 Operačný report</button>
+          <button class="btn-ai" style="border-color:var(--sz);color:var(--sz)" onmouseover="this.style.background='var(--sz)';this.style.color='#000'" onmouseout="this.style.background='transparent';this.style.color='var(--sz)'" onclick="createStrategicReport()">🔭 Strategický briefing</button>
+          <button class="btn-ai" style="border-color:#8b5cf6;color:#8b5cf6" onmouseover="this.style.background='#8b5cf6';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='#8b5cf6'" onclick="showConsult()">🤖 AI konzultácia</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── NEW ── -->
+  <div id="newPanel" style="display:none">
+    <h2>Vložiť pracovný záznam</h2>
+    <textarea id="inputText" placeholder="Vlož text z WhatsApp / hovoru / porady..."></textarea>
+    <button class="btn-primary" id="btn" onclick="spracovat()">⚡ Spracovať vstup</button>
+    <div id="status"></div>
+    <div id="result"><div class="result-grid" id="resultGrid"></div></div>
+  </div>
+
+  <!-- ── HISTORY ── -->
+  <div id="historyPanel">
+    <div class="search-box"><input type="text" id="searchInput" placeholder="🔍 Hľadať..." oninput="renderList()"/></div>
+    <div class="history-toolbar">
+      <button class="btn-sm" onclick="toggleSelectAll()" id="btnSelectAll">Označiť</button>
+      <button class="btn-sm btn-danger" id="btnDeleteSelected" onclick="deleteSelected()" disabled>🗑 Vymazať (0)</button>
+      <button class="btn-tasks" onclick="showOpenTasks()">❌ Úlohy</button>
+      <button class="btn-ai" id="btnAiReport" onclick="createAiReport()">🧠 AI report</button>
+      <button class="btn-ai" id="btnStrategic" onclick="createStrategicReport()" style="border-color:var(--sz);color:var(--sz)">🔭 Strategický</button>
+      <button class="btn-sm" onclick="showConsult()" style="border-color:#8b5cf6;color:#8b5cf6">🤖 AI</button>
+      <button class="btn-export" id="btnExportCSV"  onclick="handleExport('csv')"  title="Exportovať všetky záznamy do CSV">⬇ CSV</button>
+      <button class="btn-export" id="btnExportJSON" onclick="handleExport('json')" title="Exportovať všetky záznamy do JSON">⬇ JSON</button>
+      <span class="selected-count" id="selectedCount"></span>
+    </div>
+    <div id="recordsList"></div>
+  </div>
+
+  <!-- ── DETAIL ── -->
+  <div id="detailPanel">
+    <div class="detail-actions">
+      <button class="btn-sm" onclick="goBack()">⬅ Späť</button>
+      <button class="btn-sm" onclick="copyDetail()">📋 Kopírovať</button>
+      <button class="btn-edit" id="btnEdit" onclick="toggleEditMode()">✏️ Upraviť</button>
+    </div>
+    <div class="detail-header" id="detailHeader"></div>
+    <div class="result-grid" id="detailGrid"></div>
+    <div id="editForm" style="display:none">
+      <div class="edit-form">
+        <div class="edit-field"><label class="edit-label">Dátum</label><input type="date" class="edit-input" id="edit-datum"/></div>
+        <div class="edit-field"><label class="edit-label">Čo sa riešilo</label><textarea class="edit-textarea" id="edit-co_sa_riesilo" rows="3"></textarea></div>
+        <div class="edit-field"><label class="edit-label">Výsledok</label><textarea class="edit-textarea" id="edit-vysledok" rows="3"></textarea></div>
+        <div class="edit-field"><label class="edit-label">Problém</label><textarea class="edit-textarea" id="edit-problem" rows="2"></textarea></div>
+        <div class="edit-field"><label class="edit-label st">Úlohy – Staubert</label><textarea class="edit-textarea st" id="edit-ulohy_staubert" rows="4"></textarea><span class="edit-hint">Každá úloha na nový riadok</span></div>
+        <div class="edit-field"><label class="edit-label sz">Úlohy – Szabó</label><textarea class="edit-textarea sz" id="edit-ulohy_szabo" rows="4"></textarea><span class="edit-hint">Každá úloha na nový riadok</span></div>
+        <div class="edit-field"><label class="edit-label">Ďalší krok</label><textarea class="edit-textarea" id="edit-dalsi_krok" rows="2"></textarea></div>
+        <div class="edit-actions">
+          <button class="btn-save" id="btnSave" onclick="saveEdit()">💾 Uložiť</button>
+          <button class="btn-sm" onclick="cancelEdit()">Zrušiť</button>
+          <span class="edit-status" id="editStatus"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── REPORT ── -->
+  <div id="reportPanel">
+    <div class="report-actions">
+      <button class="btn-sm" onclick="goBackFromReport()">⬅ Späť</button>
+      <button class="btn-sm" onclick="copyReport()">📋 Kopírovať</button>
+    </div>
+    <div class="report-header">
+      <span class="report-header-title">🧠 AI Denný report</span>
+      <span class="report-header-sub" id="reportMeta"></span>
+    </div>
+    <div class="report-body" id="reportBody"></div>
+  </div>
+
+  <!-- ── STRATEGIC REPORT ── -->
+  <div id="strategicPanel" style="display:none">
+    <div class="report-actions">
+      <button class="btn-sm" onclick="goBackFromStrategic()">⬅ Späť</button>
+      <button class="btn-sm" onclick="copyStrategic()">📋 Kopírovať</button>
+    </div>
+    <div class="report-header" style="border-top-color:var(--sz)">
+      <span class="report-header-title" style="color:var(--sz)">🔭 AI Strategický briefing</span>
+      <span class="report-header-sub" id="strategicMeta"></span>
+    </div>
+    <div class="report-body" id="strategicBody"></div>
+  </div>
+
+  <!-- ── HISTÓRIA AI KONZULTÁCIÍ ── -->
+  <div id="consultHistoryPanel">
+    <div class="consult-hist-header">
+      <div>
+        <div class="consult-hist-title">🧠 História AI konzultácií</div>
+        <div class="consult-hist-sub" id="consultHistSub">Načítavam...</div>
+      </div>
+      <button class="btn-sm" onclick="goBackFromConsultHistory()">⬅ Späť</button>
+    </div>
+    <div class="consult-timeline" id="consultTimeline">
+      <div class="no-records">Načítavam konzultácie...</div>
+    </div>
+  </div>
+
+  <!-- ── AI KONZULTÁCIA ── -->
+  <div id="consultPanel">
+    <div style="display:grid;grid-template-columns:220px 1fr 200px;gap:12px;height:calc(100vh - 200px);min-height:500px">
+
+      <!-- ─ LEFT: História ─ -->
+      <div style="display:flex;flex-direction:column;gap:8px;overflow:hidden">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;padding:0 4px">História konzultácií</div>
+        <div id="consultSideList" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
+        <button class="btn-sm" style="font-size:10px" onclick="startNewConsult()">+ Nová konzultácia</button>
+        <button class="btn-sm" style="font-size:10px" onclick="goBackFromConsult()">⬅ Späť</button>
+      </div>
+
+      <!-- ─ CENTER: Chat ─ -->
+      <div style="display:flex;flex-direction:column;gap:8px;overflow:hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#8b5cf6;letter-spacing:2px">AI STRATEGICKÝ AGENT</div>
+          <button class="consult-clear" onclick="clearConsult()" style="font-size:9px">🗑 Vymazať</button>
+        </div>
+        <div class="consult-messages" id="consultMessages" style="flex:1;overflow-y:auto">
+          <div class="consult-msg system">AI agent je pripravený. Opýtajte sa na priority, riziká, úlohy alebo ďalší smer projektu.</div>
+        </div>
+        <div class="consult-input-row">
+          <button id="micBtn" onclick="toggleVoice()" title="Hlasový vstup" style="background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:10px 12px;cursor:pointer;font-size:16px;transition:all .2s;flex-shrink:0">🎤</button>
+          <textarea class="consult-input" id="consultInput" placeholder="Napíšte alebo hovorte... (Enter = odoslať)" rows="1" onkeydown="consultKeydown(event)"></textarea>
+          <button class="consult-send" id="consultSend" onclick="sendConsult()">↑</button>
+        </div>
+      </div>
+
+      <!-- ─ RIGHT: AI Core ─ -->
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase">AI Core</div>
+
+        <!-- Robot SVG -->
+        <div style="display:flex;justify-content:center">
+          <div id="aiRobotWrap" style="position:relative;width:120px;height:150px">
+            <svg id="aiRobotSvg" width="120" height="150" viewBox="0 0 120 150" style="display:block">
+              <rect x="40" y="2" width="40" height="6" rx="2" fill="#0d0d0d" stroke="#1a1a1a" stroke-width=".5"/>
+              <circle cx="60" cy="2" r="4" fill="#111" stroke="#00e5ff" stroke-width=".5"/>
+              <circle id="aiAnt" cx="60" cy="2" r="2.5" fill="#00e5ff"/>
+              <rect x="32" y="8" width="56" height="64" rx="12" fill="#111" stroke="#1a1a1a" stroke-width=".5"/>
+              <rect x="36" y="14" width="48" height="18" rx="4" fill="#0a0a0a" stroke="#111" stroke-width=".5"/>
+              <rect id="aiFH" x="42" y="20" width="36" height="1" rx=".5" fill="#00e5ff" opacity=".4"/>
+              <rect x="34" y="38" width="52" height="24" rx="7" fill="#060606" stroke="#111" stroke-width=".5"/>
+              <ellipse cx="50" cy="50" rx="8" ry="6" fill="#001818"/>
+              <ellipse cx="50" cy="50" rx="5" ry="3.5" fill="#002222"/>
+              <ellipse id="aiEL" cx="50" cy="50" rx="3.5" ry="2.5" fill="#00e5ff"/>
+              <ellipse cx="70" cy="50" rx="8" ry="6" fill="#001818"/>
+              <ellipse cx="70" cy="50" rx="5" ry="3.5" fill="#002222"/>
+              <ellipse id="aiER" cx="70" cy="50" rx="3.5" ry="2.5" fill="#00e5ff"/>
+              <rect id="aiMouth" x="46" y="66" width="28" height="1.5" rx=".75" fill="#00e5ff" opacity=".15"/>
+              <rect x="22" y="20" width="11" height="28" rx="4" fill="#0d0d0d" stroke="#111" stroke-width=".5"/>
+              <rect x="87" y="20" width="11" height="28" rx="4" fill="#0d0d0d" stroke="#111" stroke-width=".5"/>
+              <rect x="26" y="72" width="68" height="56" rx="8" fill="#111" stroke="#1a1a1a" stroke-width=".5"/>
+              <rect x="20" y="77" width="14" height="26" rx="4" fill="#0d0d0d" stroke="#111" stroke-width=".5"/>
+              <rect x="86" y="77" width="14" height="26" rx="4" fill="#0d0d0d" stroke="#111" stroke-width=".5"/>
+              <rect x="38" y="82" width="44" height="32" rx="4" fill="#080808" stroke="#111" stroke-width=".5"/>
+              <text x="60" y="97" text-anchor="middle" font-family="monospace" font-size="5" fill="#1a1a1a" letter-spacing="2">STRIKER</text>
+              <rect id="aiChest" x="46" y="102" width="28" height="1" rx=".5" fill="#00e5ff" opacity=".2"/>
+              <circle id="aiLDot" cx="23" cy="90" r="2.5" fill="#00e5ff" opacity=".3"/>
+              <circle id="aiRDot" cx="97" cy="90" r="2.5" fill="#00e5ff" opacity=".3"/>
+              <g id="aiScanFx" opacity="0">
+                <rect x="34" y="38" width="52" height="2" rx="1" fill="#00cc88" opacity=".7"/>
+              </g>
+              <g id="aiErrFx" opacity="0">
+                <text x="28" y="20" font-family="monospace" font-size="10" fill="#ff4500">!</text>
+                <text x="90" y="20" font-family="monospace" font-size="10" fill="#ff4500">!</text>
+              </g>
+            </svg>
+            <div id="aiOrbit" style="display:none;position:absolute;top:45px;left:50%;width:0;height:0">
+              <div id="ao1" style="position:absolute;width:5px;height:5px;border-radius:50%;background:#00e5ff;animation:aiOrbit1 1.5s linear infinite;margin:-2.5px"></div>
+              <div id="ao2" style="position:absolute;width:4px;height:4px;border-radius:50%;background:#00e5ff;animation:aiOrbit2 1.5s linear infinite;margin:-2px"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Status -->
+        <div style="background:#080808;border:1px solid #111;border-radius:7px;padding:10px">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:#2a2a2a;letter-spacing:2px;margin-bottom:6px">STAV AGENTA</div>
+          <div id="aiStateVal" style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:700;color:#00e5ff">IDLE</div>
+          <div id="aiStateSub" style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:#2a2a2a;margin-top:2px">Čaká na vstup</div>
+        </div>
+
+        <!-- Waveform -->
+        <div id="aiWave" style="display:flex;align-items:center;justify-content:center;gap:2px;height:24px">
+          <div class="ai-wb" style="width:3px;height:4px;border-radius:2px;background:#00e5ff;transition:height .1s"></div>
+          <div class="ai-wb" style="width:3px;height:4px;border-radius:2px;background:#00e5ff;transition:height .1s"></div>
+          <div class="ai-wb" style="width:3px;height:4px;border-radius:2px;background:#00e5ff;transition:height .1s"></div>
+          <div class="ai-wb" style="width:3px;height:4px;border-radius:2px;background:#00e5ff;transition:height .1s"></div>
+          <div class="ai-wb" style="width:3px;height:4px;border-radius:2px;background:#00e5ff;transition:height .1s"></div>
+          <div class="ai-wb" style="width:3px;height:4px;border-radius:2px;background:#00e5ff;transition:height .1s"></div>
+          <div class="ai-wb" style="width:3px;height:4px;border-radius:2px;background:#00e5ff;transition:height .1s"></div>
+          <div class="ai-wb" style="width:3px;height:4px;border-radius:2px;background:#00e5ff;transition:height .1s"></div>
+        </div>
+
+        <!-- System status -->
+        <div style="background:#080808;border:1px solid #111;border-radius:7px;padding:10px;display:flex;flex-direction:column;gap:5px">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:#2a2a2a;letter-spacing:2px;margin-bottom:2px">SYSTÉM</div>
+          <div style="display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:8px"><span style="color:#2a2a2a">DB</span><span id="aiDB" style="color:#00cc88">ONLINE</span></div>
+          <div style="display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:8px"><span style="color:#2a2a2a">RT</span><span id="aiRT" style="color:#00cc88">ACTIVE</span></div>
+          <div style="display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:8px"><span style="color:#2a2a2a">UPTIME</span><span id="aiUptime" style="color:#2a2a2a">00:00</span></div>
+        </div>
+
+        <!-- Log -->
+        <div id="aiLog" style="background:#080808;border:1px solid #111;border-radius:7px;padding:8px;flex:1;overflow-y:auto;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#2a2a2a;line-height:1.6"></div>
+      </div>
+    </div>
+  </div>
+
+<!-- ── OPEN TASKS ── -->
+  <div id="openTasksPanel">
+    <div class="detail-actions"><button class="btn-sm" onclick="goBackFromOpenTasks()">⬅ Späť</button></div>
+    <div class="open-tasks-header">
+      <span class="open-tasks-title">❌ Otvorené úlohy</span>
+      <span class="open-tasks-count" id="openTasksCount"></span>
+    </div>
+    <div id="openTasksList"></div>
+  </div>
+
+</div><!-- /page -->
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3>Potvrdiť vymazanie</h3>
+    <p id="modalText"></p>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Zrušiť</button>
+      <button class="btn-confirm-delete" onclick="confirmDelete()">Vymazať</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast">
+  <span id="toastText"></span>
+  <button class="toast-undo" onclick="undoDelete()">Obnoviť</button>
+</div>
+
+<script>
+const SUPABASE_URL='https://jjvegnwqipmcipwvdjje.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpqdmVnbndxaXBtY2lwd3ZkamplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTczMTYsImV4cCI6MjA5MzM5MzMxNn0.Jizw9XYzoGlo6teVuo6POx0zybcLjGNwrKGhtTmWXZo';
+let allRecords=[],selectedIds=new Set(),pendingDelete=[],toastTimer=null,deleteCallback=null,currentDetail=null,lastReport='',lastReportMeta='',lastReportTime=null,lastStrategic='',lastStrategicMeta='';
+let activeDrawer=null, activeCard=null;
+
+const LS_KEY='striker_task_status';
+
+function fmt(iso){if(!iso)return'—';try{const d=new Date(iso);return`${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()} – ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;}catch(e){return'—';}}
+function fmtNow(){return fmt(new Date().toISOString());}
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ── TOAST ──
+function showToast(text){clearTimeout(toastTimer);document.getElementById('toastText').textContent=text;document.getElementById('toast').classList.add('show');toastTimer=setTimeout(hideToast,4000);}
+function hideToast(){document.getElementById('toast').classList.remove('show');}
+
+// ── INIT ──
+updateDashboard();
+fetch(`${SUPABASE_URL}/rest/v1/zaznam?select=*&order=created_at.desc`,{headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`}})
+  .then(r=>r.json()).then(async data=>{allRecords=data;setDBStatus(true);await loadTaskStatus();updateDashboard();initRealtime();}).catch(()=>setDBStatus(false));
+
+</script>
+<script src="/dashboard.js" defer></script>
+<script src="/history.js" defer></script>
+<script src="/reports.js" defer></script>
+<script src="/ai-core.js" defer></script>
+<script src="/consult.js" defer></script>
+<script src="/tasks.js" defer></script>
+<script src="/realtime.js" defer></script>
+<script>
+if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{});});}
+</script>
+</body>
+</html>

@@ -338,6 +338,9 @@
     .btn-ai:disabled { opacity: .4; cursor: not-allowed; }
     .btn-tasks { background: transparent; border: 1px solid rgba(255,69,0,.4); color: var(--danger); font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 7px 13px; border-radius: 6px; cursor: pointer; transition: all .15s; }
     .btn-tasks:hover { background: var(--danger); color: #fff; }
+    .btn-export { background: transparent; border: 1px solid #2a4a2a; color: #4caf50; font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 7px 13px; border-radius: 6px; cursor: pointer; transition: all .15s; letter-spacing: .5px; }
+    .btn-export:hover { background: #4caf50; color: #000; }
+    .btn-export:disabled { opacity: .4; cursor: not-allowed; }
     .btn-edit { background: transparent; border: 1px solid var(--border); color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 7px 13px; border-radius: 6px; cursor: pointer; transition: all .15s; }
     .btn-edit:hover { border-color: var(--accent); color: var(--accent); }
     .selected-count { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); margin-left: auto; }

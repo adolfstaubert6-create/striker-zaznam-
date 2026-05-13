@@ -227,6 +227,90 @@ function updateToolbar(){
   document.getElementById('btnSelectAll').textContent=selectedIds.size===allRecords.length&&allRecords.length>0?'Zrušiť':'Označiť';
 }
 
+// ── EXPORT ───────────────────────────────────────────────────────────────────
+
+const EXPORT_FIELDS = [
+  { key: 'id',              label: 'ID' },
+  { key: 'created_at',      label: 'Uložené' },
+  { key: 'datum',           label: 'Dátum udalosti' },
+  { key: 'co_sa_riesilo',   label: 'Čo sa riešilo' },
+  { key: 'vysledok',        label: 'Výsledok' },
+  { key: 'problem',         label: 'Problém' },
+  { key: 'dalsi_krok',      label: 'Ďalší krok' },
+  { key: 'ulohy_staubert',  label: 'Úlohy Staubert' },
+  { key: 'ulohy_szabo',     label: 'Úlohy Szabó' },
+]
+
+// Fetch ALL records from DB (bypasses pagination for export)
+async function fetchAllForExport() {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/zaznam?select=*&order=created_at.desc&limit=10000`,
+    { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+  )
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.message || data.error || 'Chyba načítania')
+  return data
+}
+
+function csvEscape(val) {
+  if (val === null || val === undefined) return ''
+  const str = Array.isArray(val) ? val.join(' | ') : String(val)
+  // Wrap in quotes if contains comma, quote, newline; double existing quotes
+  if (/[",\n\r]/.test(str)) return '"' + str.replace(/"/g, '""') + '"'
+  return str
+}
+
+function downloadFile(content, filename, mime) {
+  const blob = new Blob([content], { type: mime })
+  const url  = URL.createObjectURL(blob)
+  const a    = document.createElement('a')
+  a.href     = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url) }, 100)
+}
+
+function exportJSON(records) {
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    count:      records.length,
+    records,
+  }
+  const ts = new Date().toISOString().slice(0, 10)
+  downloadFile(JSON.stringify(payload, null, 2), `striker-zaznam-${ts}.json`, 'application/json')
+  showToast(`✓ JSON export — ${records.length} záznamov`)
+}
+
+function exportCSV(records) {
+  const header = EXPORT_FIELDS.map(f => csvEscape(f.label)).join(',')
+  const rows   = records.map(r =>
+    EXPORT_FIELDS.map(f => csvEscape(r[f.key])).join(',')
+  )
+  const csv  = [header, ...rows].join('\r\n')
+  const bom  = '﻿'  // UTF-8 BOM for Excel compatibility
+  const ts   = new Date().toISOString().slice(0, 10)
+  downloadFile(bom + csv, `striker-zaznam-${ts}.csv`, 'text/csv;charset=utf-8')
+  showToast(`✓ CSV export — ${records.length} záznamov`)
+}
+
+async function handleExport(format) {
+  const btn = document.getElementById(`btnExport${format.toUpperCase()}`)
+  if (btn) { btn.disabled = true; btn.textContent = '⏳...' }
+  try {
+    const records = await fetchAllForExport()
+    if (format === 'json') exportJSON(records)
+    else                   exportCSV(records)
+  } catch (e) {
+    showToast('Chyba exportu: ' + e.message)
+  } finally {
+    if (btn) {
+      btn.disabled = false
+      btn.textContent = format === 'json' ? '⬇ JSON' : '⬇ CSV'
+    }
+  }
+}
+
 // ── DELETE ──
 function deleteSingle(id){showModal('Naozaj chceš vymazať tento záznam?',()=>executeDelete([id]));}
 function deleteSelected(){const ids=[...selectedIds];showModal(`Naozaj vymazať ${ids.length} záznam${ids.length>1?'ov':''}?`,()=>executeDelete(ids));}
