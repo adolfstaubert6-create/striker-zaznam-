@@ -19,11 +19,31 @@
 <!-- TOPBAR -->
 <div class="topbar">
   <div class="logo">STRIKER <em>/ Riadiace centrum</em></div>
-  <div class="sys-row">
-    <div class="sys-item"><span class="sys-dot" id="dotDB"></span><span id="lblDB">DB</span></div>
-    <div class="sys-item"><span class="sys-dot dim" id="dotAI"></span><span>AI</span></div>
-    <div class="sys-item"><span class="sys-dot dim" id="dotPWA"></span><span>PWA</span></div>
+  <div class="topbar-right">
+    <!-- User selector -->
+    <div class="user-selector">
+      <button class="user-btn st" data-user="Staubert" onclick="setCurrentUser('Staubert')">ST</button>
+      <button class="user-btn sz" data-user="Szabó"    onclick="setCurrentUser('Szabó')">SZ</button>
+      <span class="user-label" id="currentUserLabel">Staubert</span>
+    </div>
+    <!-- Activity log button -->
+    <button class="activity-toggle-btn" onclick="toggleActivityLog()" title="Activity log">📋 Log</button>
+    <!-- System status -->
+    <div class="sys-row">
+      <div class="sys-item"><span class="sys-dot" id="dotDB"></span><span id="lblDB">DB</span></div>
+      <div class="sys-item"><span class="sys-dot dim" id="dotAI"></span><span>AI</span></div>
+      <div class="sys-item"><span class="sys-dot dim" id="dotPWA"></span><span>PWA</span></div>
+    </div>
   </div>
+</div>
+
+<!-- ACTIVITY LOG DRAWER -->
+<div id="activityDrawer" style="display:none;position:fixed;top:0;right:0;width:320px;height:100%;background:#0c0c0c;border-left:1px solid #1e1e1e;z-index:999;flex-direction:column;box-shadow:-4px 0 20px rgba(0,0,0,.6)">
+  <div class="activity-header">
+    <span>📋 Activity Log</span>
+    <button onclick="toggleActivityLog()" style="background:transparent;border:none;color:var(--muted);font-size:18px;cursor:pointer;line-height:1">✕</button>
+  </div>
+  <div id="activityList" style="flex:1;overflow-y:auto;padding:8px 12px"></div>
 </div>
 
 <div class="page">
@@ -186,6 +206,7 @@
       <button class="btn-ai" id="btnAiReport" onclick="createAiReport()">🧠 AI report</button>
       <button class="btn-ai" id="btnStrategic" onclick="createStrategicReport()" style="border-color:var(--sz);color:var(--sz)">🔭 Strategický</button>
       <button class="btn-sm" onclick="showConsult()" style="border-color:#8b5cf6;color:#8b5cf6">🤖 AI</button>
+<<<<<<< HEAD
       <button class="btn-export" id="btnExportCSV"  onclick="handleExport('csv')"  title="Exportovať všetky záznamy do CSV">⬇ CSV</button>
       <button class="btn-export" id="btnExportJSON" onclick="handleExport('json')" title="Exportovať všetky záznamy do JSON">⬇ JSON</button>
       <span class="selected-count" id="selectedCount"></span>
@@ -200,6 +221,10 @@
       <button class="cat-chip" data-cat="Marketing" onclick="setCategoryFilter(this,'Marketing')">📣 Marketing</button>
       <button class="cat-chip" data-cat="Iné"       onclick="setCategoryFilter(this,'Iné')">📌 Iné</button>
     </div>
+=======
+      <span class="selected-count" id="selectedCount"></span>
+    </div>
+>>>>>>> e35371ce5980d630bcaba189eef59f9a79114cd0
     <div id="recordsList"></div>
   </div>
 
@@ -221,6 +246,7 @@
         <div class="edit-field"><label class="edit-label st">Úlohy – Staubert</label><textarea class="edit-textarea st" id="edit-ulohy_staubert" rows="4"></textarea><span class="edit-hint">Každá úloha na nový riadok</span></div>
         <div class="edit-field"><label class="edit-label sz">Úlohy – Szabó</label><textarea class="edit-textarea sz" id="edit-ulohy_szabo" rows="4"></textarea><span class="edit-hint">Každá úloha na nový riadok</span></div>
         <div class="edit-field"><label class="edit-label">Ďalší krok</label><textarea class="edit-textarea" id="edit-dalsi_krok" rows="2"></textarea></div>
+<<<<<<< HEAD
         <div class="edit-field">
           <label class="edit-label">Kategória</label>
           <select class="edit-input" id="edit-kategoria">
@@ -237,6 +263,8 @@
           <input type="text" class="edit-input" id="edit-tagy" placeholder="napr. klient, urgent, striker" />
           <span class="edit-hint">Oddelené čiarkou, max 5 tagov</span>
         </div>
+=======
+>>>>>>> e35371ce5980d630bcaba189eef59f9a79114cd0
         <div class="edit-actions">
           <button class="btn-save" id="btnSave" onclick="saveEdit()">💾 Uložiť</button>
           <button class="btn-sm" onclick="cancelEdit()">Zrušiť</button>
@@ -444,6 +472,7 @@ fetch(`${SUPABASE_URL}/rest/v1/zaznam?select=*&order=created_at.desc`,{headers:{
   .then(r=>r.json()).then(async data=>{allRecords=data;setDBStatus(true);await loadTaskStatus();updateDashboard();initRealtime();}).catch(()=>setDBStatus(false));
 
 </script>
+<script src="/activity.js" defer></script>
 <script src="/dashboard.js" defer></script>
 <script src="/history.js" defer></script>
 <script src="/reports.js" defer></script>

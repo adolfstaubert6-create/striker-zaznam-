@@ -1,6 +1,7 @@
 // ── STRIKER reports.js ──
 // AI operačný report a strategický briefing
 
+
 // ── Safe markdown renderer (XSS-safe) ────────────────────────────────────────
 // Escapes all HTML FIRST, then applies formatting token-by-token.
 // $1 capture groups never touch unescaped content.
@@ -81,8 +82,9 @@ async function createAiReport() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Chyba');
     lastReport = data.report;
-    setReportBody('reportBody', data.report);   // ← safe renderer
+    setReportBody('reportBody', data.report);
     updateDashboard();
+    logActivity('ai_report', `AI Report — ${allRecords.length} záznamov`);
   } catch (e) {
     const err = document.createElement('div');
     err.style.cssText = 'color:var(--danger);font-size:12px;font-family:"IBM Plex Mono",monospace';
@@ -122,7 +124,8 @@ async function createStrategicReport() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Chyba');
     lastStrategic = data.report;
-    setReportBody('strategicBody', data.report);   // ← safe renderer
+    setReportBody('strategicBody', data.report);
+    logActivity('ai_strategic', `Strategický report — ${allRecords.length} záznamov`);
   } catch (e) {
     const err = document.createElement('div');
     err.style.cssText = 'color:var(--danger);font-size:12px;font-family:"IBM Plex Mono",monospace';
