@@ -2,6 +2,16 @@
 // Záznamy, detail, edit, mazanie, nový vstup
 // Závisí na: allRecords, taskStatusMap, getTaskDone(), setTaskDone(), fmt(), escHtml(), showToast(), showModal() (app.js/tasks.js)
 
+// ── CATEGORY FILTER ──────────────────────────────────────────────────────────
+let activeCategory = ''
+
+function setCategoryFilter(btn, cat) {
+  activeCategory = cat
+  document.querySelectorAll('.cat-chip').forEach(b => b.classList.remove('active'))
+  btn.classList.add('active')
+  renderList()
+}
+
 // ── DETAIL ──
 function openDetail(record){
   currentDetail=record;hideAllPanels();
@@ -56,6 +66,8 @@ function toggleEditMode(){
     ['datum','co_sa_riesilo','vysledok','problem','dalsi_krok'].forEach(k=>document.getElementById('edit-'+k).value=r[k]||'');
     document.getElementById('edit-ulohy_staubert').value=Array.isArray(r.ulohy_staubert)?r.ulohy_staubert.join('\n'):'';
     document.getElementById('edit-ulohy_szabo').value=Array.isArray(r.ulohy_szabo)?r.ulohy_szabo.join('\n'):'';
+    document.getElementById('edit-kategoria').value=r.kategoria||'Iné';
+    document.getElementById('edit-tagy').value=Array.isArray(r.tagy)?r.tagy.join(', '):'';
     document.getElementById('editStatus').textContent='';document.getElementById('editStatus').className='edit-status';
     ef.style.display='block';dg.style.display='none';be.textContent='👁 Detail';
   } else {ef.style.display='none';dg.style.display='flex';be.textContent='✏️ Upraviť';}
@@ -65,7 +77,18 @@ async function saveEdit(){
   if(!currentDetail)return;
   const btn=document.getElementById('btnSave'),se=document.getElementById('editStatus');
   btn.disabled=true;se.textContent='Ukladám...';se.className='edit-status';
-  const payload={id:currentDetail.id,datum:document.getElementById('edit-datum').value,co_sa_riesilo:document.getElementById('edit-co_sa_riesilo').value.trim(),vysledok:document.getElementById('edit-vysledok').value.trim(),problem:document.getElementById('edit-problem').value.trim(),dalsi_krok:document.getElementById('edit-dalsi_krok').value.trim(),ulohy_staubert:document.getElementById('edit-ulohy_staubert').value.split('\n').map(l=>l.trim()).filter(Boolean),ulohy_szabo:document.getElementById('edit-ulohy_szabo').value.split('\n').map(l=>l.trim()).filter(Boolean)};
+  const payload={
+    id:currentDetail.id,
+    datum:document.getElementById('edit-datum').value,
+    co_sa_riesilo:document.getElementById('edit-co_sa_riesilo').value.trim(),
+    vysledok:document.getElementById('edit-vysledok').value.trim(),
+    problem:document.getElementById('edit-problem').value.trim(),
+    dalsi_krok:document.getElementById('edit-dalsi_krok').value.trim(),
+    ulohy_staubert:document.getElementById('edit-ulohy_staubert').value.split('\n').map(l=>l.trim()).filter(Boolean),
+    ulohy_szabo:document.getElementById('edit-ulohy_szabo').value.split('\n').map(l=>l.trim()).filter(Boolean),
+    kategoria:document.getElementById('edit-kategoria').value,
+    tagy:document.getElementById('edit-tagy').value.split(',').map(t=>t.trim().toLowerCase()).filter(Boolean).slice(0,5),
+  };
   try{
     const res=await fetch('/.netlify/functions/update-record',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     const data=await res.json();if(!res.ok)throw new Error(data.error||'Chyba');
@@ -197,25 +220,57 @@ function _renderPaginationFooter() {
 
   list.after(footer);
 }
-function renderList(){
-  const list=document.getElementById('recordsList');
-  const q=(document.getElementById('searchInput')?.value||'').toLowerCase().trim();
-  const filtered=q?allRecords.filter(r=>[r.datum,r.co_sa_riesilo,r.vysledok,r.problem,r.dalsi_krok,...(r.ulohy_staubert||[]),...(r.ulohy_szabo||[])].some(v=>v&&v.toString().toLowerCase().includes(q))):allRecords;
-  if(!filtered.length){list.innerHTML='<div class="no-records">Žiadne záznamy</div>';return;}
-  list.innerHTML='';
-  filtered.forEach(r=>{
-    const item=document.createElement('div');item.className='zaznam-item'+(selectedIds.has(r.id)?' selected':'');
-    const hasSt=Array.isArray(r.ulohy_staubert)&&r.ulohy_staubert.length>0;
-    const hasSz=Array.isArray(r.ulohy_szabo)&&r.ulohy_szabo.length>0;
-    const hasProb=r.problem&&r.problem.trim()!=='';
-    const pills=(hasSt?'<span class="pill st">Staubert</span>':'')+(hasSz?'<span class="pill sz">Szabó</span>':'')+(hasProb?'<span class="pill prob">⚠ Problém</span>':'');
-    const mainDate=r.created_at?fmt(r.created_at):'—';
-    const eventDate=r.datum&&r.datum.trim()?`<span class="zaznam-event-date">Udalosť: ${r.datum}</span>`:'';
-    item.innerHTML=`<div class="zaznam-check"></div><div class="zaznam-body"><div class="zaznam-date">${mainDate}</div>${eventDate}<div class="zaznam-title">${escHtml(r.co_sa_riesilo||'—')}</div><div class="zaznam-sub">${escHtml(r.dalsi_krok||'')}</div>${pills?'<div class="zaznam-pills">'+pills+'</div>':''}</div><button class="zaznam-delete" onclick="event.stopPropagation();deleteSingle('${r.id}')">🗑</button>`;
-    item.querySelector('.zaznam-check').addEventListener('click',e=>{e.stopPropagation();toggleSelect(r.id);});
-    item.addEventListener('click',()=>openDetail(r));
-    list.appendChild(item);
-  });
+const CAT_ICON = { Obchod: '💼', Technické: '⚙️', Financie: '💰', HR: '👥', Marketing: '📣', Iné: '📌' }
+
+function renderList() {
+  const list = document.getElementById('recordsList')
+  const q    = (document.getElementById('searchInput')?.value || '').toLowerCase().trim()
+
+  let filtered = allRecords
+
+  // Category filter
+  if (activeCategory) {
+    filtered = filtered.filter(r => r.kategoria === activeCategory)
+  }
+
+  // Text search
+  if (q) {
+    filtered = filtered.filter(r =>
+      [r.datum, r.co_sa_riesilo, r.vysledok, r.problem, r.dalsi_krok, r.kategoria,
+       ...(r.ulohy_staubert || []), ...(r.ulohy_szabo || []), ...(r.tagy || [])]
+        .some(v => v && v.toString().toLowerCase().includes(q))
+    )
+  }
+
+  if (!filtered.length) { list.innerHTML = '<div class="no-records">Žiadne záznamy</div>'; return }
+  list.innerHTML = ''
+
+  filtered.forEach(r => {
+    const item     = document.createElement('div')
+    item.className = 'zaznam-item' + (selectedIds.has(r.id) ? ' selected' : '')
+
+    const hasSt   = Array.isArray(r.ulohy_staubert) && r.ulohy_staubert.length > 0
+    const hasSz   = Array.isArray(r.ulohy_szabo)    && r.ulohy_szabo.length    > 0
+    const hasProb = r.problem && r.problem.trim() !== ''
+    const catIcon = r.kategoria ? (CAT_ICON[r.kategoria] || '📌') : ''
+    const catPill = r.kategoria ? `<span class="pill cat">${catIcon} ${escHtml(r.kategoria)}</span>` : ''
+    const tagPills = Array.isArray(r.tagy) && r.tagy.length
+      ? r.tagy.map(t => `<span class="pill tag">#${escHtml(t)}</span>`).join('')
+      : ''
+    const pills = (hasSt ? '<span class="pill st">Staubert</span>' : '')
+                + (hasSz ? '<span class="pill sz">Szabó</span>' : '')
+                + (hasProb ? '<span class="pill prob">⚠ Problém</span>' : '')
+                + catPill + tagPills
+
+    const mainDate  = r.created_at ? fmt(r.created_at) : '—'
+    const eventDate = r.datum && r.datum.trim()
+      ? `<span class="zaznam-event-date">Udalosť: ${r.datum}</span>` : ''
+
+    item.innerHTML = `<div class="zaznam-check"></div><div class="zaznam-body"><div class="zaznam-date">${mainDate}</div>${eventDate}<div class="zaznam-title">${escHtml(r.co_sa_riesilo || '—')}</div><div class="zaznam-sub">${escHtml(r.dalsi_krok || '')}</div>${pills ? '<div class="zaznam-pills">' + pills + '</div>' : ''}</div><button class="zaznam-delete" onclick="event.stopPropagation();deleteSingle('${r.id}')">🗑</button>`
+    item.querySelector('.zaznam-check').addEventListener('click', e => { e.stopPropagation(); toggleSelect(r.id) })
+    item.addEventListener('click', () => openDetail(r))
+    list.appendChild(item)
+  })
 }
 function toggleSelect(id){if(selectedIds.has(id))selectedIds.delete(id);else selectedIds.add(id);updateToolbar();renderList();}
 function toggleSelectAll(){if(selectedIds.size===allRecords.length)selectedIds.clear();else allRecords.forEach(r=>selectedIds.add(r.id));updateToolbar();renderList();}
@@ -233,6 +288,8 @@ const EXPORT_FIELDS = [
   { key: 'id',              label: 'ID' },
   { key: 'created_at',      label: 'Uložené' },
   { key: 'datum',           label: 'Dátum udalosti' },
+  { key: 'kategoria',       label: 'Kategória' },
+  { key: 'tagy',            label: 'Tagy' },
   { key: 'co_sa_riesilo',   label: 'Čo sa riešilo' },
   { key: 'vysledok',        label: 'Výsledok' },
   { key: 'problem',         label: 'Problém' },

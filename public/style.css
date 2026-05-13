@@ -338,6 +338,15 @@
     .btn-ai:disabled { opacity: .4; cursor: not-allowed; }
     .btn-tasks { background: transparent; border: 1px solid rgba(255,69,0,.4); color: var(--danger); font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 7px 13px; border-radius: 6px; cursor: pointer; transition: all .15s; }
     .btn-tasks:hover { background: var(--danger); color: #fff; }
+    /* ── Category filter chips ── */
+    .category-filter { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 0 6px; }
+    .cat-chip { background: transparent; border: 1px solid var(--border); color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 5px 11px; border-radius: 20px; cursor: pointer; transition: all .15s; letter-spacing: .3px; }
+    .cat-chip:hover { border-color: #444; color: var(--text); }
+    .cat-chip.active { border-color: var(--accent); color: var(--accent); background: rgba(232,255,0,.07); }
+    /* Category + tag pills in record list */
+    .pill.cat { border-color: rgba(232,255,0,.35); color: var(--accent); background: rgba(232,255,0,.06); }
+    .pill.tag { border-color: rgba(139,92,246,.4); color: #a78bfa; background: rgba(139,92,246,.07); font-size: 9px; }
+
     .btn-export { background: transparent; border: 1px solid #2a4a2a; color: #4caf50; font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 7px 13px; border-radius: 6px; cursor: pointer; transition: all .15s; letter-spacing: .5px; }
     .btn-export:hover { background: #4caf50; color: #000; }
     .btn-export:disabled { opacity: .4; cursor: not-allowed; }
