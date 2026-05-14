@@ -19,13 +19,12 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: 'Neplatný JSON' }) };
   }
 
-  const { id, datum, co_sa_riesilo, vysledok, problem, dalsi_krok, ulohy_staubert, ulohy_szabo, kategoria, tagy } = body;
+  const { id, datum, co_sa_riesilo, vysledok, problem, dalsi_krok, ulohy_staubert, ulohy_szabo, tagy } = body;
 
   if (!id) {
     return { statusCode: 400, body: JSON.stringify({ error: 'Chýba id' }) };
   }
 
-  const ALLOWED_CATEGORIES = ['Obchod', 'Technické', 'Financie', 'HR', 'Marketing', 'Iné'];
   const updateData = JSON.stringify({
     datum,
     co_sa_riesilo,
@@ -34,7 +33,6 @@ exports.handler = async (event) => {
     dalsi_krok,
     ulohy_staubert: Array.isArray(ulohy_staubert) ? ulohy_staubert : [],
     ulohy_szabo:    Array.isArray(ulohy_szabo)    ? ulohy_szabo    : [],
-    kategoria:      ALLOWED_CATEGORIES.includes(kategoria) ? kategoria : 'Iné',
     tagy:           Array.isArray(tagy) ? tagy.slice(0, 5).map(t => String(t).toLowerCase().trim()).filter(Boolean) : [],
   });
 
