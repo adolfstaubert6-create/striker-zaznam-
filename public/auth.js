@@ -2,15 +2,10 @@
 // Supabase Auth — email/password prihlasenie
 // Závisí na: SUPABASE_URL, SUPABASE_KEY, window.supabase (CDN)
 
-let _authClient  = null
 let _currentUser = null   // Supabase User object
 
-// ── Init auth client ──────────────────────────────────────────────────────────
-function _getAuthClient() {
-  if (_authClient) return _authClient
-  _authClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
-  return _authClient
-}
+// Použi zdieľaný klient definovaný v index.html (window._supabase)
+function _getAuthClient() { return window._supabase }
 
 // ── Public API ────────────────────────────────────────────────────────────────
 function getAuthUser()     { return _currentUser }

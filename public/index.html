@@ -16,8 +16,8 @@
 </head>
 <body>
 
-<!-- ── LOGIN SCREEN ── -->
-<div id="loginScreen" style="display:none;position:fixed;inset:0;z-index:9999;background:#080808;align-items:center;justify-content:center;flex-direction:column">
+<!-- ── LOGIN SCREEN ── shown by default, hidden after auth -->
+<div id="loginScreen" style="display:flex;position:fixed;inset:0;z-index:9999;background:#080808;align-items:center;justify-content:center;flex-direction:column">
   <div class="login-card">
     <div class="login-logo">STRIKER <em>/ Centrum</em></div>
     <div class="login-subtitle">Riadiace centrum · Prihlásenie</div>
@@ -486,6 +486,8 @@
 <script>
 const SUPABASE_URL='https://jjvegnwqipmcipwvdjje.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpqdmVnbndxaXBtY2lwd3ZkamplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTczMTYsImV4cCI6MjA5MzM5MzMxNn0.Jizw9XYzoGlo6teVuo6POx0zybcLjGNwrKGhtTmWXZo';
+// Jeden zdieľaný Supabase klient pre celú appku
+const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let allRecords=[],selectedIds=new Set(),pendingDelete=[],toastTimer=null,deleteCallback=null,currentDetail=null,lastReport='',lastReportMeta='',lastReportTime=null,lastStrategic='',lastStrategicMeta='';
 let activeDrawer=null, activeCard=null;
 
@@ -500,35 +502,35 @@ function showToast(text){clearTimeout(toastTimer);document.getElementById('toast
 function hideToast(){document.getElementById('toast').classList.remove('show');}
 
 // ── INIT — called by auth.js after successful login ──
+// Retries until defer scripts (dashboard.js, history.js …) finish loading
 function _initApp() {
+  if (typeof updateDashboard === 'undefined' || typeof loadHistory === 'undefined') {
+    setTimeout(_initApp, 80); return
+  }
   updateDashboard();
-  const userName = getAuthUserName()
-  // Use auth token for Supabase requests
-  const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
-  client.auth.getSession().then(({ data: { session } }) => {
+  _supabase.auth.getSession().then(({ data: { session } }) => {
     const token = session?.access_token || SUPABASE_KEY
-    fetch(`${SUPABASE_URL}/rest/v1/zaznam?select=*&order=created_at.desc&limit=50`,{
-      headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${token}`,'Prefer':'count=exact'}
+    fetch(`${SUPABASE_URL}/rest/v1/zaznam?select=*&order=created_at.desc&limit=50`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}`, 'Prefer': 'count=exact' }
     })
-    .then(r=>{
-      const range = r.headers.get('Content-Range')||''
-      const m = range.match(/\/(\d+)$/)
-      if(m) { window._totalCount=parseInt(m[1],10); }
+    .then(r => {
+      const m = (r.headers.get('Content-Range') || '').match(/\/(\d+)$/)
+      if (m) window._totalCount = parseInt(m[1], 10)
       return r.json()
     })
-    .then(async data=>{
-      allRecords=data;setDBStatus(true);await loadTaskStatus();updateDashboard();
-      renderList && renderList();
-      initRealtime();
-    }).catch(()=>setDBStatus(false))
+    .then(async data => {
+      allRecords = data; setDBStatus(true); await loadTaskStatus(); updateDashboard()
+      if (typeof renderList === 'function') renderList()
+      initRealtime()
+    }).catch(() => setDBStatus(false))
   })
 }
 
 </script>
 <script src="/auth.js"></script>
 <script>
-// Start auth check immediately (before defer scripts load)
-window.addEventListener('DOMContentLoaded', () => initAuth())
+// Zavolaj priamo — DOMContentLoaded už bol fired (sme na konci body)
+initAuth()
 </script>
 <script src="/notifications.js" defer></script>
 <script src="/activity.js" defer></script>
