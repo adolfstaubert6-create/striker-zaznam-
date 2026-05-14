@@ -26,6 +26,10 @@
       <button class="user-btn sz" data-user="Szabó"    onclick="setCurrentUser('Szabó')">SZ</button>
       <span class="user-label" id="currentUserLabel">Staubert</span>
     </div>
+    <!-- Notification bell -->
+    <button class="notif-bell-btn" onclick="clearUnreadCount()" title="Notifikácie">
+      🔔 <span id="notifBadge" class="notif-badge" style="display:none">0</span>
+    </button>
     <!-- Activity log button -->
     <button class="activity-toggle-btn" onclick="toggleActivityLog()" title="Activity log">📋 Log</button>
     <!-- System status -->
@@ -36,6 +40,9 @@
     </div>
   </div>
 </div>
+
+<!-- NOTIFICATION CONTAINER -->
+<div id="notifContainer" style="position:fixed;top:60px;right:16px;z-index:1001;display:flex;flex-direction:column;gap:8px;pointer-events:none;width:300px"></div>
 
 <!-- ACTIVITY LOG DRAWER -->
 <div id="activityDrawer" style="display:none;position:fixed;top:0;right:0;width:320px;height:100%;background:#0c0c0c;border-left:1px solid #1e1e1e;z-index:999;flex-direction:column;box-shadow:-4px 0 20px rgba(0,0,0,.6)">
@@ -472,6 +479,7 @@ fetch(`${SUPABASE_URL}/rest/v1/zaznam?select=*&order=created_at.desc`,{headers:{
   .then(r=>r.json()).then(async data=>{allRecords=data;setDBStatus(true);await loadTaskStatus();updateDashboard();initRealtime();}).catch(()=>setDBStatus(false));
 
 </script>
+<script src="/notifications.js" defer></script>
 <script src="/activity.js" defer></script>
 <script src="/dashboard.js" defer></script>
 <script src="/history.js" defer></script>

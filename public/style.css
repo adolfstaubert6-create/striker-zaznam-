@@ -342,6 +342,22 @@
     .btn-tasks { background: transparent; border: 1px solid rgba(255,69,0,.4); color: var(--danger); font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 7px 13px; border-radius: 6px; cursor: pointer; transition: all .15s; }
     .btn-tasks:hover { background: var(--danger); color: #fff; }
 <<<<<<< HEAD
+    /* ── Notifications ── */
+    .notif-item { background: #111; border: 1px solid #222; border-left: 3px solid #444; border-radius: 6px; padding: 10px 12px; pointer-events: all; animation: notifSlideIn .25s ease; position: relative; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,.5); }
+    @keyframes notifSlideIn { from { opacity:0; transform: translateX(20px) } to { opacity:1; transform:translateX(0) } }
+    .notif-top { display: flex; align-items: center; gap: 8px; }
+    .notif-icon { font-size: 15px; flex-shrink: 0; }
+    .notif-msg { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text); flex: 1; font-weight: 600; }
+    .notif-close { background: transparent; border: none; color: var(--muted); font-size: 12px; cursor: pointer; padding: 0 0 0 4px; line-height: 1; flex-shrink: 0; }
+    .notif-close:hover { color: var(--text); }
+    .notif-detail { font-family: 'IBM Plex Sans', sans-serif; font-size: 11px; color: var(--muted); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .notif-bar { position: absolute; bottom: 0; left: 0; height: 2px; background: var(--notif-color, #444); animation: notifBar linear forwards; width: 100%; }
+    @keyframes notifBar { from { width: 100% } to { width: 0% } }
+    /* Bell button */
+    .notif-bell-btn { position: relative; background: transparent; border: 1px solid var(--border); color: var(--muted); font-size: 14px; padding: 4px 8px; border-radius: 5px; cursor: pointer; transition: all .15s; }
+    .notif-bell-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .notif-badge { position: absolute; top: -5px; right: -5px; background: #ef4444; color: #fff; font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 700; width: 16px; height: 16px; border-radius: 50%; align-items: center; justify-content: center; }
+
     /* ── Topbar extensions ── */
     .topbar { justify-content: space-between; }
     .topbar-right { display: flex; align-items: center; gap: 12px; }

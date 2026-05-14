@@ -94,6 +94,7 @@ async function saveEdit(){
     const updated=data.record?data.record:{...currentDetail,...payload};
     currentDetail=updated;const idx=allRecords.findIndex(r=>r.id===updated.id);if(idx!==-1)allRecords[idx]=updated;
     se.textContent='✓ Uložené';se.className='edit-status ok';
+    markLocalMutation(updated.id);
     logActivity('edit', `Upravený záznam: ${updated.co_sa_riesilo||'–'}`, updated.id);
     setTimeout(()=>{cancelEdit();openDetail(updated);updateDashboard();},700);
   }catch(e){se.textContent='✗ '+e.message;se.className='edit-status error';}finally{btn.disabled=false;}
@@ -108,6 +109,7 @@ async function spracovat(){
     const res=await fetch('/.netlify/functions/process',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
     const data=await res.json();if(!res.ok)throw new Error(data.error||'Chyba');
     document.getElementById('inputText').value='';zobrazVysledok(data);setStatus('✓ Uložené','ok');
+    if(data.id) markLocalMutation(data.id);
     allRecords.unshift(data);updateDashboard();
     logActivity('create', `Vytvorený záznam: ${data.co_sa_riesilo||'–'}`, data.id);
   }catch(e){setStatus('✗ '+e.message,'error');}finally{btn.disabled=false;}
@@ -412,7 +414,7 @@ function confirmDelete(){const cb=deleteCallback;closeModal();deleteCallback=nul
 async function executeDelete(ids){
   pendingDelete=allRecords.filter(r=>ids.includes(r.id));
   allRecords=allRecords.filter(r=>!ids.includes(r.id));
-  ids.forEach(id=>selectedIds.delete(id));updateToolbar();renderList();updateDashboard();
+  ids.forEach(id=>{ selectedIds.delete(id); markLocalMutation(id); });updateToolbar();renderList();updateDashboard();
   try{
     const res=await fetch('/.netlify/functions/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids})});
     if(!res.ok)throw new Error(await res.text());

@@ -48,16 +48,18 @@ function initRealtime(){
     _channel=_supabaseClient
       .channel('zaznam-changes')
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'zaznam'},(payload)=>{
-        console.log('REALTIME PAYLOAD INSERT:', payload);
         const record=payload.new;
         if(!record||allRecords.find(r=>r.id===record.id))return;
         allRecords.unshift(record);
         allRecords.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
         scheduleRender();
         document.getElementById('dotAI').className='sys-dot';
+        if(!isLocalMutation(record.id)){
+          showNotification({ type:'new', message:'Nový záznam', detail: record.co_sa_riesilo })
+          _incrementUnread()
+        }
       })
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'zaznam'},(payload)=>{
-        console.log('REALTIME PAYLOAD UPDATE:', payload);
         const record=payload.new;
         if(!record)return;
         const idx=allRecords.findIndex(r=>r.id===record.id);
@@ -69,9 +71,12 @@ function initRealtime(){
           const dp=document.getElementById('detailPanel');
           if(dp&&dp.style.display!=='none')openDetail(record);
         }
+        if(!isLocalMutation(record.id)){
+          showNotification({ type:'update', message:'Záznam upravený', detail: record.co_sa_riesilo })
+          _incrementUnread()
+        }
       })
       .on('postgres_changes',{event:'DELETE',schema:'public',table:'zaznam'},(payload)=>{
-        console.log('REALTIME PAYLOAD DELETE:', payload);
         const old=payload.old;
         if(!old||!old.id)return;
         if(pendingDelete.find(r=>r.id===old.id))return;
@@ -79,11 +84,13 @@ function initRealtime(){
         scheduleRender();
         if(currentDetail&&currentDetail.id===old.id){
           goBack();
-          showToast('Záznam bol vymazaný iným používateľom');
+          showNotification({ type:'delete', message:'Záznam bol zmazaný', detail: old.co_sa_riesilo||'' })
+        } else if(!isLocalMutation(old.id)){
+          showNotification({ type:'delete', message:'Záznam zmazaný', detail: old.co_sa_riesilo||'' })
+          _incrementUnread()
         }
       })
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'task_status'},(payload)=>{
-        console.log('REALTIME TASK INSERT:', payload);
         const r=payload.new; if(!r)return;
         taskStatusMap[`${r.record_id}__${r.field}__${r.task_index}`]=r.done;
         updateDashboard();
@@ -94,9 +101,13 @@ function initRealtime(){
         if(activeDrawer) renderDrawerContent(activeDrawer.id);
         const dp=document.getElementById('detailPanel');
         if(dp&&dp.style.display!=='none'&&currentDetail) openDetail(currentDetail);
+        if(!isLocalMutation(`task_${r.record_id}_${r.field}_${r.task_index}`)){
+          const who = r.field==='ulohy_staubert'?'Staubert':'Szabó'
+          showNotification({ type:'task', message:`Úloha: ${who}`, detail: r.done?'Splnená ✅':'Otvorená ❌' })
+          _incrementUnread()
+        }
       })
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'task_status'},(payload)=>{
-        console.log('REALTIME TASK UPDATE:', payload);
         const r=payload.new; if(!r)return;
         taskStatusMap[`${r.record_id}__${r.field}__${r.task_index}`]=r.done;
         updateDashboard();
@@ -107,6 +118,11 @@ function initRealtime(){
         if(activeDrawer) renderDrawerContent(activeDrawer.id);
         const dp=document.getElementById('detailPanel');
         if(dp&&dp.style.display!=='none'&&currentDetail) openDetail(currentDetail);
+        if(!isLocalMutation(`task_${r.record_id}_${r.field}_${r.task_index}`)){
+          const who = r.field==='ulohy_staubert'?'Staubert':'Szabó'
+          showNotification({ type:'task', message:`Úloha: ${who}`, detail: r.done?'Splnená ✅':'Otvorená ❌' })
+          _incrementUnread()
+        }
       })
       .subscribe((status)=>{
         console.log('REALTIME STATUS:', status);
