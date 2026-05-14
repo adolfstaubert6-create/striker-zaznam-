@@ -6,6 +6,10 @@
 const USERS = ['Staubert', 'Szabó']
 
 function getCurrentUser() {
+  // Prefer authenticated user; fall back to localStorage for offline/dev
+  if (typeof getAuthUserName === 'function' && isAuthenticated && isAuthenticated()) {
+    return getAuthUserName()
+  }
   return localStorage.getItem('striker_user') || 'Staubert'
 }
 

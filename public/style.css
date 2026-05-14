@@ -342,6 +342,27 @@
     .btn-tasks { background: transparent; border: 1px solid rgba(255,69,0,.4); color: var(--danger); font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 7px 13px; border-radius: 6px; cursor: pointer; transition: all .15s; }
     .btn-tasks:hover { background: var(--danger); color: #fff; }
 <<<<<<< HEAD
+    /* ── Login screen ── */
+    .login-card { background: #101010; border: 1px solid #222; border-radius: 12px; padding: 36px 32px; width: 100%; max-width: 360px; }
+    .login-logo { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; letter-spacing: 4px; color: var(--accent); line-height: 1; margin-bottom: 4px; }
+    .login-logo em { color: var(--muted); font-style: normal; font-size: 1rem; letter-spacing: 2px; }
+    .login-subtitle { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 28px; }
+    .login-form { display: flex; flex-direction: column; gap: 16px; }
+    .login-field { display: flex; flex-direction: column; gap: 6px; }
+    .login-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; }
+    .login-input { background: #080808; border: 1px solid #2a2a2a; color: var(--text); font-family: 'IBM Plex Mono', monospace; font-size: 14px; padding: 10px 14px; border-radius: 6px; outline: none; transition: border-color .15s; width: 100%; }
+    .login-input:focus { border-color: var(--accent); }
+    .login-pw-wrap { position: relative; display: flex; }
+    .login-pw-wrap .login-input { padding-right: 44px; }
+    .login-pw-toggle { position: absolute; right: 0; top: 0; height: 100%; width: 40px; background: transparent; border: none; cursor: pointer; font-size: 14px; color: var(--muted); }
+    .login-error { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #ef4444; min-height: 18px; }
+    .login-btn { background: var(--accent); border: none; color: #000; font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 12px; border-radius: 6px; cursor: pointer; margin-top: 4px; transition: opacity .15s; }
+    .login-btn:hover { opacity: .85; }
+    .login-btn:disabled { opacity: .5; cursor: not-allowed; }
+    /* Logout */
+    .logout-btn { background: transparent; border: 1px solid #2a2a2a; color: var(--muted); width: 30px; height: 30px; border-radius: 5px; cursor: pointer; font-size: 14px; transition: all .15s; display: flex; align-items: center; justify-content: center; }
+    .logout-btn:hover { border-color: #ef4444; color: #ef4444; }
+
     /* ── Notifications ── */
     .notif-item { background: #111; border: 1px solid #222; border-left: 3px solid #444; border-radius: 6px; padding: 10px 12px; pointer-events: all; animation: notifSlideIn .25s ease; position: relative; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,.5); }
     @keyframes notifSlideIn { from { opacity:0; transform: translateX(20px) } to { opacity:1; transform:translateX(0) } }
