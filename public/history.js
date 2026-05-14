@@ -128,7 +128,6 @@ function zobrazVysledok(d){
   document.getElementById('result').style.display='block';
 }
 
-<<<<<<< HEAD
 // ── HISTORY — paginated ───────────────────────────────────────────────────────
 const PAGE_SIZE   = 50;
 let   _page       = 0;      // current page index (0-based)
@@ -275,36 +274,6 @@ function renderList() {
     item.addEventListener('click', () => openDetail(r))
     list.appendChild(item)
   })
-=======
-// ── HISTORY ──
-async function loadHistory(){
-  const list=document.getElementById('recordsList');list.innerHTML='<div class="no-records">Načítavam...</div>';
-  selectedIds.clear();updateToolbar();
-  try{
-    const res=await fetch(`${SUPABASE_URL}/rest/v1/zaznam?select=*&order=created_at.desc`,{headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`}});
-    allRecords=await res.json();setDBStatus(true);renderList();updateDashboard();
-  }catch(e){list.innerHTML='<div class="no-records">Chyba načítania</div>';setDBStatus(false);}
-}
-function renderList(){
-  const list=document.getElementById('recordsList');
-  const q=(document.getElementById('searchInput')?.value||'').toLowerCase().trim();
-  const filtered=q?allRecords.filter(r=>[r.datum,r.co_sa_riesilo,r.vysledok,r.problem,r.dalsi_krok,...(r.ulohy_staubert||[]),...(r.ulohy_szabo||[])].some(v=>v&&v.toString().toLowerCase().includes(q))):allRecords;
-  if(!filtered.length){list.innerHTML='<div class="no-records">Žiadne záznamy</div>';return;}
-  list.innerHTML='';
-  filtered.forEach(r=>{
-    const item=document.createElement('div');item.className='zaznam-item'+(selectedIds.has(r.id)?' selected':'');
-    const hasSt=Array.isArray(r.ulohy_staubert)&&r.ulohy_staubert.length>0;
-    const hasSz=Array.isArray(r.ulohy_szabo)&&r.ulohy_szabo.length>0;
-    const hasProb=r.problem&&r.problem.trim()!=='';
-    const pills=(hasSt?'<span class="pill st">Staubert</span>':'')+(hasSz?'<span class="pill sz">Szabó</span>':'')+(hasProb?'<span class="pill prob">⚠ Problém</span>':'');
-    const mainDate=r.created_at?fmt(r.created_at):'—';
-    const eventDate=r.datum&&r.datum.trim()?`<span class="zaznam-event-date">Udalosť: ${r.datum}</span>`:'';
-    item.innerHTML=`<div class="zaznam-check"></div><div class="zaznam-body"><div class="zaznam-date">${mainDate}</div>${eventDate}<div class="zaznam-title">${escHtml(r.co_sa_riesilo||'—')}</div><div class="zaznam-sub">${escHtml(r.dalsi_krok||'')}</div>${pills?'<div class="zaznam-pills">'+pills+'</div>':''}</div><button class="zaznam-delete" onclick="event.stopPropagation();deleteSingle('${r.id}')">🗑</button>`;
-    item.querySelector('.zaznam-check').addEventListener('click',e=>{e.stopPropagation();toggleSelect(r.id);});
-    item.addEventListener('click',()=>openDetail(r));
-    list.appendChild(item);
-  });
->>>>>>> e35371ce5980d630bcaba189eef59f9a79114cd0
 }
 function toggleSelect(id){if(selectedIds.has(id))selectedIds.delete(id);else selectedIds.add(id);updateToolbar();renderList();}
 function toggleSelectAll(){if(selectedIds.size===allRecords.length)selectedIds.clear();else allRecords.forEach(r=>selectedIds.add(r.id));updateToolbar();renderList();}
@@ -316,7 +285,6 @@ function updateToolbar(){
   document.getElementById('btnSelectAll').textContent=selectedIds.size===allRecords.length&&allRecords.length>0?'Zrušiť':'Označiť';
 }
 
-<<<<<<< HEAD
 // ── EXPORT ───────────────────────────────────────────────────────────────────
 
 const EXPORT_FIELDS = [
@@ -403,8 +371,6 @@ async function handleExport(format) {
   }
 }
 
-=======
->>>>>>> e35371ce5980d630bcaba189eef59f9a79114cd0
 // ── DELETE ──
 function deleteSingle(id){showModal('Naozaj chceš vymazať tento záznam?',()=>executeDelete([id]));}
 function deleteSelected(){const ids=[...selectedIds];showModal(`Naozaj vymazať ${ids.length} záznam${ids.length>1?'ov':''}?`,()=>executeDelete(ids));}

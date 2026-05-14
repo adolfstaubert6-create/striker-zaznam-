@@ -19,20 +19,13 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: 'Neplatný JSON' }) };
   }
 
-<<<<<<< HEAD
   const { id, datum, co_sa_riesilo, vysledok, problem, dalsi_krok, ulohy_staubert, ulohy_szabo, kategoria, tagy } = body;
-=======
-  const { id, datum, co_sa_riesilo, vysledok, problem, dalsi_krok, ulohy_staubert, ulohy_szabo } = body;
->>>>>>> e35371ce5980d630bcaba189eef59f9a79114cd0
 
   if (!id) {
     return { statusCode: 400, body: JSON.stringify({ error: 'Chýba id' }) };
   }
 
-<<<<<<< HEAD
   const ALLOWED_CATEGORIES = ['Obchod', 'Technické', 'Financie', 'HR', 'Marketing', 'Iné'];
-=======
->>>>>>> e35371ce5980d630bcaba189eef59f9a79114cd0
   const updateData = JSON.stringify({
     datum,
     co_sa_riesilo,
@@ -40,13 +33,9 @@ exports.handler = async (event) => {
     problem,
     dalsi_krok,
     ulohy_staubert: Array.isArray(ulohy_staubert) ? ulohy_staubert : [],
-<<<<<<< HEAD
     ulohy_szabo:    Array.isArray(ulohy_szabo)    ? ulohy_szabo    : [],
     kategoria:      ALLOWED_CATEGORIES.includes(kategoria) ? kategoria : 'Iné',
     tagy:           Array.isArray(tagy) ? tagy.slice(0, 5).map(t => String(t).toLowerCase().trim()).filter(Boolean) : [],
-=======
-    ulohy_szabo: Array.isArray(ulohy_szabo) ? ulohy_szabo : [],
->>>>>>> e35371ce5980d630bcaba189eef59f9a79114cd0
   });
 
   const urlObj = new URL(`${SUPABASE_URL}/rest/v1/zaznam?id=eq.${encodeURIComponent(id)}`);
