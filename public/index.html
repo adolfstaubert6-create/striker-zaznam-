@@ -486,8 +486,8 @@
 <script>
 const SUPABASE_URL='https://jjvegnwqipmcipwvdjje.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpqdmVnbndxaXBtY2lwd3ZkamplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTczMTYsImV4cCI6MjA5MzM5MzMxNn0.Jizw9XYzoGlo6teVuo6POx0zybcLjGNwrKGhtTmWXZo';
-// Jeden zdieľaný Supabase klient pre celú appku
-const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// Jeden zdieľaný Supabase klient — var (nie const) aby bol na window globálne
+var _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let allRecords=[],selectedIds=new Set(),pendingDelete=[],toastTimer=null,deleteCallback=null,currentDetail=null,lastReport='',lastReportMeta='',lastReportTime=null,lastStrategic='',lastStrategicMeta='';
 let activeDrawer=null, activeCard=null;
 
