@@ -22,8 +22,17 @@ JSON musí mať PRESNE túto štruktúru:
   "ulohy_staubert": [],
   "ulohy_szabo": [],
   "dalsi_krok": "",
+  "kategoria": "",
   "tagy": []
 }
+
+Pravidlá pre kategoria — vyber PRESNE JEDNU z týchto hodnôt:
+- "Obchod"     — predaj, klienti, ponuky, zmluvy, tržby
+- "Technické"  — vývoj, opravy, bugs, infraštruktúra, systémy
+- "Financie"   — náklady, faktúry, rozpočet, platby
+- "HR"         — tím, nábor, porady, HR záležitosti
+- "Marketing"  — kampane, sociálne médiá, brand, obsah
+- "Iné"        — všetko ostatné
 
 Pravidlá pre tagy — pole max 5 krátkych kľúčových slov (lowercase), napr. ["klient", "urgent", "bug", "striker"]
 
@@ -37,8 +46,8 @@ Text: ${text}`;
   try { parsed = JSON.parse(aiResult.replace(/```json|```/g, '').trim()) }
   catch { return { statusCode: 500, body: JSON.stringify({ error: 'Neplatný JSON', raw: aiResult }) } }
 
-  // Sanitize — kategoria column doesn't exist in DB yet (run migration to add it)
-  delete parsed.kategoria;
+  const ALLOWED_CATEGORIES = ['Obchod', 'Technické', 'Financie', 'HR', 'Marketing', 'Iné'];
+  if (!ALLOWED_CATEGORIES.includes(parsed.kategoria)) parsed.kategoria = 'Iné';
   if (!Array.isArray(parsed.tagy)) parsed.tagy = [];
   parsed.tagy = parsed.tagy.slice(0, 5).map(t => String(t).toLowerCase().trim()).filter(Boolean);
 
