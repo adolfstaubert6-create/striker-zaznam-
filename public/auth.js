@@ -93,14 +93,16 @@ function _updateTopbarUser() {
 
 // ── Login screen UI ───────────────────────────────────────────────────────────
 function _showLoginScreen() {
-  document.getElementById('loginScreen').style.display  = 'flex'
-  document.getElementById('appWrapper').style.display   = 'none'
-  document.getElementById('loginEmail').focus()
+  document.getElementById('loginScreen').style.display = 'flex'
+  document.getElementById('appWrapper').style.display  = 'none'
+  document.body.classList.add('login-active')           // locks body scroll
+  setTimeout(() => document.getElementById('loginEmail')?.focus(), 50)
 }
 
 function _hideLoginScreen() {
   document.getElementById('loginScreen').style.display = 'none'
   document.getElementById('appWrapper').style.display  = 'block'
+  document.body.classList.remove('login-active')
 }
 
 // ── Login form handler ────────────────────────────────────────────────────────

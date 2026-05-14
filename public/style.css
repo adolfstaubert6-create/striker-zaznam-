@@ -342,6 +342,8 @@
     .btn-tasks { background: transparent; border: 1px solid rgba(255,69,0,.4); color: var(--danger); font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 7px 13px; border-radius: 6px; cursor: pointer; transition: all .15s; }
     .btn-tasks:hover { background: var(--danger); color: #fff; }
 <<<<<<< HEAD
+    /* ── Body scroll lock during login ── */
+    body.login-active { overflow: hidden; }
     /* ── Login screen ── */
     .login-card { background: #101010; border: 1px solid #222; border-radius: 12px; padding: 36px 32px; width: 100%; max-width: 360px; }
     .login-logo { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; letter-spacing: 4px; color: var(--accent); line-height: 1; margin-bottom: 4px; }
