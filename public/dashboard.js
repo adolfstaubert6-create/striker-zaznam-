@@ -195,14 +195,14 @@ function renderDrawerPerson(el, name, field, cls) {
   const btnId = cls === 'st' ? 'drawerStShowAll' : 'drawerSzShowAll';
   const LIMIT = 5;
 
-  const completedId = `completedList_${cls}`;
+  const dataUser = cls === 'st' ? 'staubert' : 'szabo';
 
   let html = `<div class="drawer-stat-row">
     <div class="drawer-stat"><div class="drawer-stat-val" style="color:${color}">${items.length}</div><div class="drawer-stat-lbl">Otvorené</div></div>
-    <div class="drawer-stat drawer-hotove-stat" data-history-user="${cls}" style="cursor:pointer">
-      <div class="drawer-stat-val" style="color:var(--ok)">${done}</div>
-      <div class="drawer-stat-lbl">Hotové ↗</div>
-    </div>
+    <button class="completed-history-trigger" data-user="${dataUser}">
+      <span class="count">${done}</span>
+      <span>HOTOVÉ ↓</span>
+    </button>
     <div class="drawer-stat"><div class="drawer-stat-val" style="color:var(--muted)">${pct}%</div><div class="drawer-stat-lbl">Splnené</div></div>
   </div>
   <div class="drawer-progress-bar"><div class="drawer-progress-fill" style="width:${pct}%;background:${color}"></div></div>`;
@@ -499,25 +499,36 @@ function renderOpenTasks(){
 let hmCurrentField = 'ulohy_staubert';
 let hmAllTasks = [];
 
-window.openHistoryModal = function(person) {
-  // Show modal immediately — nothing can block this
+window.openHistoryModal = function(user) {
+  console.log('OPEN MODAL FOR:', user);
+
   const modal = document.getElementById('taskHistoryModal');
-  if (!modal) return;
+  if (!modal) {
+    console.error('taskHistoryModal nenájdený');
+    return;
+  }
+
+  modal.classList.add('active');
   modal.style.display = 'flex';
   document.body.style.overflow = 'hidden';
 
+  const isSzabo = user === 'szabo' || user === 'sz';
+  const titleEl = modal.querySelector('[data-history-title]');
+  if (titleEl) {
+    titleEl.textContent = isSzabo
+      ? 'História splnených úloh – Szabó'
+      : 'História splnených úloh – Staubert';
+  }
+
   try {
-    hmCurrentField = person === 'st' ? 'ulohy_staubert' : 'ulohy_szabo';
-    const name = person === 'st' ? 'Staubert' : 'Szabó';
-    const titleEl = document.getElementById('hmTitle');
-    if (titleEl) titleEl.textContent = `História – ${name}`;
+    hmCurrentField = isSzabo ? 'ulohy_szabo' : 'ulohy_staubert';
     hmClearFilters();
     hmCollectTasks();
     hmApplyFilters();
   } catch(e) {
-    console.error('[openHistoryModal]', e);
+    console.error('[openHistoryModal data]', e);
     const body = document.getElementById('hmBody');
-    if (body) body.innerHTML = '<div style="color:#666;font-family:monospace;padding:40px;text-align:center">Chyba pri načítaní: ' + e.message + '</div>';
+    if (body) body.innerHTML = '<div style="color:#ef4444;font-family:monospace;padding:40px;text-align:center">Chyba: ' + e.message + '</div>';
   }
 };
 
@@ -682,14 +693,19 @@ async function hmDeleteTask(rid, taskText, field) {
   } catch(e) { console.error('[hmDelete]', e); }
 }
 
-document.addEventListener('click', (e) => {
-  const trigger = e.target.closest('[data-history-user]');
+document.addEventListener('click', function(e) {
+  const trigger = e.target.closest('.completed-history-trigger');
   if (!trigger) return;
-  const user = trigger.dataset.historyUser;
-  console.log('Opening history for:', user);
+
+  e.preventDefault();
+  e.stopPropagation();
+
+  const user = trigger.dataset.user;
+  console.log('HOTOVÉ CLICK:', user);
+
   if (typeof window.openHistoryModal === 'function') {
     window.openHistoryModal(user);
   } else {
-    console.error('openHistoryModal not defined');
+    console.error('window.openHistoryModal neexistuje');
   }
 });

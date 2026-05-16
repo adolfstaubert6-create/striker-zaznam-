@@ -631,6 +631,29 @@
     .btn-cancel { padding: 9px 18px; border: 1px solid var(--border); border-radius: 6px; background: transparent; color: var(--text); cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
     .btn-confirm-delete { padding: 9px 18px; border: none; border-radius: 6px; background: var(--danger); color: #fff; cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
   
+    /* ─── COMPLETED HISTORY TRIGGER BUTTON ─── */
+    .completed-history-trigger {
+      cursor: pointer;
+      pointer-events: auto;
+      position: relative;
+      z-index: 50;
+      background: rgba(16,185,129,.08);
+      border: 1px solid rgba(16,185,129,.25);
+      border-radius: 6px;
+      color: var(--ok);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      padding: 6px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      transition: background .15s, border-color .15s;
+      min-width: 60px;
+    }
+    .completed-history-trigger:hover { background: rgba(16,185,129,.18); border-color: rgba(16,185,129,.5); }
+    .completed-history-trigger .count { font-size: 18px; font-weight: 700; line-height: 1; }
+
     /* ─── HOTOVÉ CHIP ON PERSON CARD ─── */
     .hm-hotove-chip {
       display: inline-flex; align-items: center; gap: 4px;
