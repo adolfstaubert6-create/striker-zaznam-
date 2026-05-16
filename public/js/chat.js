@@ -537,7 +537,7 @@ function _fmtDateTime(iso) {
 }
 
 function _typeLabel(type) {
-  return { info:'info', warning:'warn', critical:'crit', ai_note:'ai' }[type] || type;
+  return { info:'info', warning:'upoz', critical:'krit', ai_note:'ai' }[type] || type;
 }
 
 function _setDBStatus(ok) {
@@ -548,8 +548,8 @@ function _setDBStatus(ok) {
 function _setOnlineLabel(state) {
   const el = document.getElementById('chatOnlineIndicator');
   if (!el) return;
-  if (state === 'live')    { el.textContent = '● online'; el.style.color = 'var(--ok)'; }
-  else if (state === 'offline') { el.textContent = '● offline'; el.style.color = 'var(--danger)'; }
+  if (state === 'live')    { el.textContent = '● online';      el.style.color = 'var(--ok)'; }
+  else if (state === 'offline') { el.textContent = '● nedostupný'; el.style.color = 'var(--danger)'; }
 }
 
 function _showEmpty() {

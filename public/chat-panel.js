@@ -242,8 +242,8 @@ function _icScrollBottom() {
 function _icSetStatus(s) {
   const el = document.getElementById('icOnlineStatus');
   if (!el) return;
-  if (s === 'live')    { el.textContent = '● online';  el.style.color = 'var(--ok)'; }
-  else                 { el.textContent = '● offline'; el.style.color = 'var(--danger)'; }
+  if (s === 'live')    { el.textContent = '● online';      el.style.color = 'var(--ok)'; }
+  else                 { el.textContent = '● nedostupný'; el.style.color = 'var(--danger)'; }
 }
 
 function _icDateSep(iso) {
@@ -261,7 +261,7 @@ function _icFmtTime(iso) {
 }
 
 function _icTypeLabel(t) {
-  return { info:'info', warning:'warn', critical:'crit', ai_note:'ai' }[t] || t;
+  return { info:'info', warning:'upoz', critical:'krit', ai_note:'ai' }[t] || t;
 }
 
 function _icEsc(s) {
