@@ -3,7 +3,7 @@
 const https = require('https');
 
 const BASE = process.env.SUPABASE_URL;
-const KEY  = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY;
+const KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY;
 
 function sbRequest(method, path, body) {
   return new Promise((resolve, reject) => {
