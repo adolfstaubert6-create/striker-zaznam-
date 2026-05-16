@@ -199,9 +199,8 @@ function renderDrawerPerson(el, name, field, cls) {
 
   let html = `<div class="drawer-stat-row">
     <div class="drawer-stat"><div class="drawer-stat-val" style="color:${color}">${items.length}</div><div class="drawer-stat-lbl">Otvorené</div></div>
-    <button class="completed-history-trigger" data-user="${dataUser}">
-      <span class="count">${done}</span>
-      <span>HOTOVÉ ↓</span>
+    <button style="background:red;color:white;cursor:pointer;border:none;padding:8px;z-index:99999;position:relative;pointer-events:auto;" data-history-user="${cls}" onclick="console.log('HOTOVE CLICKED ${cls}'); window.openHistoryModal && window.openHistoryModal('${cls}')">
+      ${done} HOTOVÉ
     </button>
     <div class="drawer-stat"><div class="drawer-stat-val" style="color:var(--muted)">${pct}%</div><div class="drawer-stat-lbl">Splnené</div></div>
   </div>
@@ -708,4 +707,8 @@ document.addEventListener('click', function(e) {
   } else {
     console.error('window.openHistoryModal neexistuje');
   }
+});
+
+document.addEventListener('click', (e) => {
+  console.log('ANY CLICK:', e.target, e.target.className);
 });
