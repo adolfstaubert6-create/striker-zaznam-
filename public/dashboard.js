@@ -199,8 +199,9 @@ function renderDrawerPerson(el, name, field, cls) {
 
   let html = `<div class="drawer-stat-row">
     <div class="drawer-stat"><div class="drawer-stat-val" style="color:${color}">${items.length}</div><div class="drawer-stat-lbl">Otvorené</div></div>
-    <button style="background:red;color:white;cursor:pointer;border:none;padding:8px;z-index:99999;position:relative;pointer-events:auto;" data-history-user="${cls}" onclick="console.log('HOTOVE CLICKED ${cls}'); window.openHistoryModal && window.openHistoryModal('${cls}')">
-      ${done} HOTOVÉ
+    <button class="completed-history-trigger" data-user="${dataUser}" style="cursor:pointer;pointer-events:auto;position:relative;z-index:50;">
+      <span class="count">${done}</span>
+      <span>HOTOVÉ ↓</span>
     </button>
     <div class="drawer-stat"><div class="drawer-stat-val" style="color:var(--muted)">${pct}%</div><div class="drawer-stat-lbl">Splnené</div></div>
   </div>
@@ -276,9 +277,8 @@ function updateDashboard(){
 
   let stDone=0,szDone=0;
   allRecords.forEach(r=>{
-    const s=r.ulohy_splnene||{};
-    if(Array.isArray(r.ulohy_staubert))r.ulohy_staubert.forEach(t=>{if(s[t])stDone++;});
-    if(Array.isArray(r.ulohy_szabo))r.ulohy_szabo.forEach(t=>{if(s[t])szDone++;});
+    if(Array.isArray(r.ulohy_staubert))r.ulohy_staubert.forEach((_,i)=>{if(getTaskDone(r.id,'ulohy_staubert',i))stDone++;});
+    if(Array.isArray(r.ulohy_szabo))r.ulohy_szabo.forEach((_,i)=>{if(getTaskDone(r.id,'ulohy_szabo',i))szDone++;});
   });
   const elStH=document.getElementById('dStHotove');
   const elSzH=document.getElementById('dSzHotove');
@@ -542,13 +542,17 @@ function hmCollectTasks() {
     const arr = r[hmCurrentField];
     const splnene = r.ulohy_splnene || {};
     if (!Array.isArray(arr)) return;
-    arr.forEach(taskText => {
+    arr.forEach((taskText, i) => {
+      // Same source as the drawer counter — taskStatusMap via getTaskDone
+      if (!getTaskDone(r.id, hmCurrentField, i)) return;
       const meta = splnene[taskText];
-      if (!meta) return;
       if (typeof meta === 'string') {
         hmAllTasks.push({ rid: r.id, field: hmCurrentField, text: taskText, date: meta, time: '—', priority: 'Normálna', category: r.kategoria || '—', source: 'Manuálne', description: '' });
-      } else {
+      } else if (meta && typeof meta === 'object') {
         hmAllTasks.push({ rid: r.id, field: hmCurrentField, text: taskText, date: meta.date || '—', time: meta.time || '—', priority: meta.priority || 'Normálna', category: meta.category || r.kategoria || '—', source: meta.source || 'Manuálne', description: meta.description || '' });
+      } else {
+        // Done via task_status only — no splnene metadata, use record date
+        hmAllTasks.push({ rid: r.id, field: hmCurrentField, text: taskText, date: r.datum || '—', time: '—', priority: 'Normálna', category: r.kategoria || '—', source: 'Manuálne', description: '' });
       }
     });
   });
@@ -709,6 +713,3 @@ document.addEventListener('click', function(e) {
   }
 });
 
-document.addEventListener('click', (e) => {
-  console.log('ANY CLICK:', e.target, e.target.className);
-});
