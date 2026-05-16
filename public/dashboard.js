@@ -275,6 +275,17 @@ function updateDashboard(){
   document.getElementById('dSzVal').textContent=szOpen;
   document.getElementById('dStSub').textContent=stOpen===0?'všetky splnené':'otvorených úloh';
   document.getElementById('dSzSub').textContent=szOpen===0?'všetky splnené':'otvorených úloh';
+
+  let stDone=0,szDone=0;
+  allRecords.forEach(r=>{
+    const s=r.ulohy_splnene||{};
+    if(Array.isArray(r.ulohy_staubert))r.ulohy_staubert.forEach(t=>{if(s[t])stDone++;});
+    if(Array.isArray(r.ulohy_szabo))r.ulohy_szabo.forEach(t=>{if(s[t])szDone++;});
+  });
+  const elStH=document.getElementById('dStHotove');
+  const elSzH=document.getElementById('dSzHotove');
+  if(elStH)elStH.textContent=stDone;
+  if(elSzH)elSzH.textContent=szDone;
   const tot=stOpen+szOpen||1;
   document.getElementById('dSplitSt').style.width=Math.round(stOpen/tot*100)+'%';
 
@@ -318,7 +329,10 @@ function buildCompletedList(field, containerId) {
     const splnene = r.ulohy_splnene || {};
     if (!Array.isArray(arr)) return;
     arr.forEach(task => {
-      if (splnene[task]) completed.push({ rid: r.id, text: task, iso: splnene[task] });
+      const meta = splnene[task];
+      if (!meta) return;
+      const iso = typeof meta === 'string' ? meta : (meta.date || '');
+      completed.push({ rid: r.id, text: task, iso });
     });
   });
 
@@ -326,8 +340,9 @@ function buildCompletedList(field, containerId) {
 
   completed.sort((a, b) => b.iso.localeCompare(a.iso));
   return completed.map(c => {
-    const d = new Date(c.iso);
-    const dateStr = isNaN(d) ? c.iso
+    const isoStr = typeof c.iso === 'object' ? (c.iso.date || '') : c.iso;
+    const d = new Date(isoStr);
+    const dateStr = isNaN(d) ? isoStr
       : `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
     const enc = encodeURIComponent(c.text);
     return `<div class="drawer-completed-item">
@@ -382,13 +397,25 @@ async function splnitUlohu(rid, field, idx, taskText) {
     taskEl.style.pointerEvents = 'none';
   }
 
-  // Persist completion date to ulohy_splnene on the zaznam record
+  // Persist completion metadata to ulohy_splnene on the zaznam record
   const record = allRecords.find(r => r.id === rid);
   if (!record) return;
 
-  const today = new Date().toISOString().slice(0, 10);
+  const now = new Date();
   const splnene = Object.assign({}, record.ulohy_splnene || {});
-  splnene[taskText] = today;
+  let source = 'Manuálne';
+  if (Array.isArray(record.tagy)) {
+    if (record.tagy.includes('chat')) source = 'AI Chat';
+    else if (record.tagy.includes('komunikacia') || record.tagy.includes('komunikácia')) source = 'Komunikácia';
+  }
+  splnene[taskText] = {
+    date: now.toISOString().slice(0, 10),
+    time: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
+    priority: 'Normálna',
+    category: record.kategoria || '—',
+    source,
+    description: ''
+  };
 
   try {
     const { data: { session } } = await window._supabase.auth.getSession();
@@ -467,4 +494,180 @@ function renderOpenTasks(){
     });
     list.appendChild(div);
   });
+}
+
+// ── HISTÓRIA HOTOVÝCH ÚLOH MODAL ─────────────────────────────
+let hmCurrentField = 'ulohy_staubert';
+let hmAllTasks = [];
+
+function openHistoryModal(person) {
+  hmCurrentField = person === 'st' ? 'ulohy_staubert' : 'ulohy_szabo';
+  const name = person === 'st' ? 'Staubert' : 'Szabó';
+  document.getElementById('hmTitle').textContent = `História – ${name}`;
+  hmClearFilters();
+  hmCollectTasks();
+  hmApplyFilters();
+  document.getElementById('taskHistoryModal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeHistoryModal() {
+  document.getElementById('taskHistoryModal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function hmCollectTasks() {
+  hmAllTasks = [];
+  allRecords.forEach(r => {
+    const arr = r[hmCurrentField];
+    const splnene = r.ulohy_splnene || {};
+    if (!Array.isArray(arr)) return;
+    arr.forEach(taskText => {
+      const meta = splnene[taskText];
+      if (!meta) return;
+      if (typeof meta === 'string') {
+        hmAllTasks.push({ rid: r.id, field: hmCurrentField, text: taskText, date: meta, time: '—', priority: 'Normálna', category: r.kategoria || '—', source: 'Manuálne', description: '' });
+      } else {
+        hmAllTasks.push({ rid: r.id, field: hmCurrentField, text: taskText, date: meta.date || '—', time: meta.time || '—', priority: meta.priority || 'Normálna', category: meta.category || r.kategoria || '—', source: meta.source || 'Manuálne', description: meta.description || '' });
+      }
+    });
+  });
+  hmAllTasks.sort((a, b) => {
+    const da = `${a.date} ${a.time}`, db = `${b.date} ${b.time}`;
+    return db.localeCompare(da);
+  });
+}
+
+function hmApplyFilters() {
+  const q = (document.getElementById('hmSearch').value || '').toLowerCase();
+  const prio = document.getElementById('hmFilterPriority').value;
+  const src = document.getElementById('hmFilterSource').value;
+  const dateF = document.getElementById('hmFilterDate').value;
+  const today = new Date().toISOString().slice(0, 10);
+  const weekAgo = new Date(Date.now() - 7*24*60*60*1000).toISOString().slice(0, 10);
+  const monthAgo = new Date(Date.now() - 30*24*60*60*1000).toISOString().slice(0, 10);
+
+  let tasks = hmAllTasks;
+  if (q) tasks = tasks.filter(t => t.text.toLowerCase().includes(q) || t.description.toLowerCase().includes(q));
+  if (prio) tasks = tasks.filter(t => t.priority === prio);
+  if (src) tasks = tasks.filter(t => t.source === src);
+  if (dateF === 'today') tasks = tasks.filter(t => t.date === today);
+  else if (dateF === 'week') tasks = tasks.filter(t => t.date >= weekAgo);
+  else if (dateF === 'month') tasks = tasks.filter(t => t.date >= monthAgo);
+
+  const countEl = document.getElementById('hmCount');
+  if (countEl) countEl.textContent = `(${tasks.length})`;
+  hmRenderTimeline(tasks);
+}
+
+function hmClearFilters() {
+  ['hmSearch','hmFilterPriority','hmFilterSource','hmFilterDate'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+}
+
+function hmRenderTimeline(tasks) {
+  const body = document.getElementById('hmBody');
+  if (!tasks.length) {
+    body.innerHTML = '<div class="hm-empty">Žiadne splnené úlohy</div>';
+    return;
+  }
+  const byDate = {};
+  tasks.forEach(t => {
+    const d = t.date || '—';
+    if (!byDate[d]) byDate[d] = [];
+    byDate[d].push(t);
+  });
+  const dates = Object.keys(byDate).sort((a, b) => b.localeCompare(a));
+  let html = '';
+  dates.forEach(date => {
+    html += `<div class="hm-day-group"><div class="hm-day-label">${hmFormatDate(date)}</div>`;
+    byDate[date].forEach(t => { html += hmBuildTaskRow(t); });
+    html += '</div>';
+  });
+  body.innerHTML = html;
+}
+
+function hmFormatDate(iso) {
+  if (!iso || iso === '—') return '—';
+  const parts = iso.split('-');
+  if (parts.length !== 3) return iso;
+  return `${parts[2]}.${parts[1]}.${parts[0]}`;
+}
+
+function hmPrioBadge(p) {
+  const cls = p === 'Kritická' ? 'kriticka' : p === 'Nízka' ? 'nizka' : 'normalna';
+  return `<span class="hm-badge ${cls}">${escHtml(p)}</span>`;
+}
+
+function hmBuildTaskRow(t) {
+  const enc = encodeURIComponent(t.text);
+  const desc = t.description ? `<div class="hm-task-desc">${escHtml(t.description)}</div>` : '';
+  const cat = t.category && t.category !== '—' ? `<span class="hm-badge cat">${escHtml(t.category)}</span>` : '';
+  return `<div class="hm-task">
+    <div class="hm-task-time">${escHtml(t.time)}</div>
+    <div class="hm-task-body">
+      <div class="hm-task-name">✅ ${escHtml(t.text)}</div>
+      ${desc}
+      <div class="hm-task-meta">
+        ${hmPrioBadge(t.priority)}
+        ${cat}
+        <span class="hm-badge source">${escHtml(t.source)}</span>
+      </div>
+    </div>
+    <div class="hm-task-actions">
+      <button class="hm-btn" title="Kopírovať" onclick="hmCopyTask(decodeURIComponent('${enc}'))">📋</button>
+      <button class="hm-btn restore" title="Obnoviť" onclick="hmRestoreTask('${t.rid}',decodeURIComponent('${enc}'))">↩</button>
+      <button class="hm-btn del" title="Odstrániť" onclick="hmDeleteTask('${t.rid}',decodeURIComponent('${enc}'),'${t.field}')">🗑</button>
+    </div>
+  </div>`;
+}
+
+function hmCopyTask(text) {
+  navigator.clipboard.writeText(text).then(() => showToast('Skopírované')).catch(() => {});
+}
+
+async function hmRestoreTask(rid, taskText) {
+  const record = allRecords.find(r => r.id == rid);
+  if (!record) return;
+  const splnene = Object.assign({}, record.ulohy_splnene || {});
+  delete splnene[taskText];
+  try {
+    const { data: { session } } = await window._supabase.auth.getSession();
+    const token = session?.access_token || SUPABASE_KEY;
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/zaznam?id=eq.${encodeURIComponent(rid)}`, {
+      method: 'PATCH',
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ulohy_splnene: splnene })
+    });
+    if (res.ok) {
+      record.ulohy_splnene = splnene;
+      hmCollectTasks(); hmApplyFilters(); updateDashboard();
+      showToast('Úloha obnovená ako otvorená');
+    }
+  } catch(e) { console.error('[hmRestore]', e); }
+}
+
+async function hmDeleteTask(rid, taskText, field) {
+  const record = allRecords.find(r => r.id == rid);
+  if (!record) return;
+  const splnene = Object.assign({}, record.ulohy_splnene || {});
+  delete splnene[taskText];
+  const f = field || hmCurrentField;
+  const arr = Array.isArray(record[f]) ? record[f].filter(t => t !== taskText) : [];
+  try {
+    const { data: { session } } = await window._supabase.auth.getSession();
+    const token = session?.access_token || SUPABASE_KEY;
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/zaznam?id=eq.${encodeURIComponent(rid)}`, {
+      method: 'PATCH',
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ulohy_splnene: splnene, [f]: arr })
+    });
+    if (res.ok) {
+      record.ulohy_splnene = splnene;
+      record[f] = arr;
+      hmCollectTasks(); hmApplyFilters(); updateDashboard();
+      showToast('Úloha odstránená');
+    }
+  } catch(e) { console.error('[hmDelete]', e); }
 }

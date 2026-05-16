@@ -155,6 +155,7 @@
           <div class="dcard-label">Staubert</div>
           <div class="dcard-value" id="dStVal">–</div>
           <div class="dcard-sub" id="dStSub">otvorených úloh</div>
+          <div class="hm-hotove-chip" onclick="event.stopPropagation();openHistoryModal('st')">✅ <span id="dStHotove">0</span> hotových</div>
         </div>
         <div class="detail-drawer" id="drawerSt">
           <div class="detail-drawer-inner" id="drawerStContent"></div>
@@ -169,6 +170,7 @@
           <div class="dcard-label">Szabó</div>
           <div class="dcard-value" id="dSzVal">–</div>
           <div class="dcard-sub" id="dSzSub">otvorených úloh</div>
+          <div class="hm-hotove-chip" onclick="event.stopPropagation();openHistoryModal('sz')">✅ <span id="dSzHotove">0</span> hotových</div>
         </div>
         <div class="detail-drawer" id="drawerSz">
           <div class="detail-drawer-inner" id="drawerSzContent"></div>
@@ -590,6 +592,51 @@ initAuth()
 <script>
 if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{});});}
 </script>
+<!-- ── HISTÓRIA HOTOVÝCH ÚLOH – FULLSCREEN MODAL ── -->
+<div id="taskHistoryModal" style="display:none" class="hm-overlay" onclick="if(event.target===this)closeHistoryModal()">
+  <div class="hm-modal">
+    <div class="hm-header">
+      <div style="display:flex;align-items:baseline;gap:10px">
+        <div class="hm-title" id="hmTitle">História – Staubert</div>
+        <span class="hm-count" id="hmCount"></span>
+      </div>
+      <button class="hm-close" onclick="closeHistoryModal()">✕ Zavrieť</button>
+    </div>
+    <div class="hm-search">
+      <input type="text" id="hmSearch" placeholder="🔍 Hľadať splnené úlohy..." oninput="hmApplyFilters()">
+    </div>
+    <div class="hm-filters">
+      <label class="hm-filter">
+        <select id="hmFilterPriority" onchange="hmApplyFilters()">
+          <option value="">Priorita</option>
+          <option value="Kritická">Kritická</option>
+          <option value="Normálna">Normálna</option>
+          <option value="Nízka">Nízka</option>
+        </select>
+      </label>
+      <label class="hm-filter">
+        <select id="hmFilterSource" onchange="hmApplyFilters()">
+          <option value="">Zdroj</option>
+          <option value="AI Chat">AI Chat</option>
+          <option value="Manuálne">Manuálne</option>
+          <option value="Systém">Systém</option>
+          <option value="Komunikácia">Komunikácia</option>
+        </select>
+      </label>
+      <label class="hm-filter">
+        <select id="hmFilterDate" onchange="hmApplyFilters()">
+          <option value="">Dátum</option>
+          <option value="today">Dnes</option>
+          <option value="week">Tento týždeň</option>
+          <option value="month">Tento mesiac</option>
+        </select>
+      </label>
+      <button class="hm-filter" onclick="hmClearFilters();hmApplyFilters()">✕ Zrušiť filtre</button>
+    </div>
+    <div class="hm-body" id="hmBody"></div>
+  </div>
+</div>
+
 </div><!-- /appWrapper -->
 </body>
 </html>
