@@ -300,7 +300,7 @@ function setDBStatus(ok){
 }
 
 // ── PANELS ──
-function hideAllPanels(){['dashboardPanel','newPanel','historyPanel','detailPanel','reportPanel','strategicPanel','consultPanel','consultHistoryPanel','openTasksPanel'].forEach(id=>document.getElementById(id).style.display='none');}
+function hideAllPanels(){['dashboardPanel','newPanel','historyPanel','detailPanel','reportPanel','strategicPanel','consultPanel','consultHistoryPanel','openTasksPanel','chatPanel'].forEach(id=>document.getElementById(id).style.display='none');}
 function showTab(tab,el){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   if(el)el.classList.add('active');
@@ -308,6 +308,7 @@ function showTab(tab,el){
   if(tab==='dashboard'){document.getElementById('dashboardPanel').style.display='block';}
   else if(tab==='new'){document.getElementById('newPanel').style.display='block';}
   else if(tab==='history'){document.getElementById('historyPanel').style.display='block';loadHistory();}
+  else if(tab==='chat'){document.getElementById('chatPanel').style.display='block';if(typeof icInit==='function')icInit();}
 }
 function goBack(){currentDetail=null;hideAllPanels();document.getElementById('historyPanel').style.display='block';document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');if(i===2)t.classList.add('active');});}
 function goBackFromReport(){hideAllPanels();document.getElementById('historyPanel').style.display='block';document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');if(i===2)t.classList.add('active');});}
