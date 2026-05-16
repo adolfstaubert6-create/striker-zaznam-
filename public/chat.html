@@ -109,6 +109,7 @@
           </span>
         </div>
         <div class="chat-header-actions">
+          <div class="ai-summary-panel" id="aiSummaryPanel"></div>
           <button class="btn-sm" id="btnSelectMode" onclick="toggleSelectMode()"
                   style="font-size:10px">☑ Vybrať</button>
           <button class="btn-sm" onclick="scrollToBottom()"
@@ -141,22 +142,28 @@
       <div class="chat-compose">
         <!-- Type selector -->
         <div class="compose-type-row">
-          <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);
-                       line-height:22px;margin-right:2px;letter-spacing:1px">TYP:</span>
           <button class="type-btn act-info" data-type="info"     onclick="setType('info')">info</button>
           <button class="type-btn"          data-type="warning"  onclick="setType('warning')">upozornenie</button>
           <button class="type-btn"          data-type="critical" onclick="setType('critical')">kritické</button>
           <button class="type-btn"          data-type="ai_note"  onclick="setType('ai_note')">ai poznámka</button>
+        </div>
+        <!-- Slash hint -->
+        <div class="compose-slash-hint" id="composeSlashHint">
+          <span style="color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:9px;margin-right:2px">PRÍKAZY:</span>
+          <span class="slash-chip" onclick="applySlash('urgent')">/urgent</span>
+          <span class="slash-chip" onclick="applySlash('task')">/task</span>
+          <span class="slash-chip" onclick="applySlash('warning')">/warning</span>
+          <span class="slash-chip" onclick="applySlash('info')">/info</span>
         </div>
         <!-- Input row -->
         <div class="compose-row">
           <textarea
             class="compose-input"
             id="composeInput"
-            placeholder="Napíšte správu… (Enter = odoslať, Shift+Enter = nový riadok)"
+            placeholder="Napíšte správu… (Enter = odoslať, / = príkazy)"
             rows="1"
             onkeydown="composeKeydown(event)"
-            oninput="autoResize(this)"></textarea>
+            oninput="autoResize(this);composeInput(event)"></textarea>
           <button class="compose-send" id="composeSend" onclick="sendMessage()"
                   title="Odoslať (Enter)">↑</button>
         </div>

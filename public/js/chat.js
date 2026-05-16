@@ -10,7 +10,8 @@ let _currentType   = 'info';
 let _chatChannel   = null;
 let _chatReady     = false;
 let _lastDateSep   = null;
-let _aiSuggestions = {};  // message_id → suggestion object
+let _lastMsgAuthor = null;
+let _aiSuggestions = {};
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
 async function initChat() {
@@ -132,6 +133,7 @@ function _renderMessages() {
 
   const self = getAuthUserName();
   _lastDateSep = null;
+  _lastMsgAuthor = null;
   let html = '';
 
   _chatMsgs.forEach(msg => {
@@ -172,19 +174,24 @@ function _buildMessageHTML(msg, self, skipDateSep) {
   const timeStr = _fmtTime(msg.created_at);
   const selectedClass = _selectedIds.has(msg.id) ? ' selected' : '';
 
+  // Date separator resets grouping
+  const hasSep = !skipDateSep && _needDateSep(msg.created_at);
+  if (hasSep) _lastMsgAuthor = null;
+  const grouped = !hasSep && _lastMsgAuthor === msg.author && !_selectedIds.has(msg.id);
+  _lastMsgAuthor = msg.author;
+
   let bubbleExtra = ` bub-${msg.type}`;
   if (msg.pinned) bubbleExtra += ' is-pinned';
 
   const pinMark = msg.pinned ? '<span class="pin-mark">📌</span>' : '';
   const pinBtnClass = msg.pinned ? 'msg-act-btn pinned-active' : 'msg-act-btn';
   const pinLabel = msg.pinned ? '📌 Odopnúť' : '📌 Pripnúť';
-
   const selBtnClass = _selectedIds.has(msg.id) ? 'msg-act-btn selected-active' : 'msg-act-btn';
   const selLabel = _selectedIds.has(msg.id) ? '☑ Odznačiť' : '☐ Vybrať';
+  const dateSep = hasSep ? _buildDateSep(msg.created_at) : '';
+  const groupCls = grouped ? ' grouped' : '';
 
-  const dateSep = (!skipDateSep && _needDateSep(msg.created_at)) ? _buildDateSep(msg.created_at) : '';
-
-  return `${dateSep}<div class="chat-msg ${isSelf ? 'self' : 'other'}${selectedClass}" data-msg-id="${escHtml(msg.id)}">
+  return `${dateSep}<div class="chat-msg ${isSelf ? 'self' : 'other'}${selectedClass}${groupCls}" data-msg-id="${escHtml(msg.id)}">
   <div class="chat-msg-header">
     <span class="chat-msg-author ${authorClass}">${escHtml(msg.author)}</span>
     <span class="chat-msg-time">${timeStr}</span>
@@ -716,6 +723,7 @@ async function _triggerAiExtract(msgId, content, authorId) {
     if (data.has_task && data.confidence_score > 0.6) {
       _aiSuggestions[msgId] = { ...data, message_id: msgId, status: 'pending' };
       _renderAiCard(msgId, _aiSuggestions[msgId]);
+      _updateAiPanel();
     }
   } catch(e) { console.warn('[ai-extract]', e); }
 }
@@ -730,10 +738,19 @@ function _aiCardHTML(s) {
   const assignedLabel = s.assigned_to === 'staubert' ? '👤 Staubert' : s.assigned_to === 'szabo' ? '👤 Szabó' : '👥 Obaja';
   const prioClass = s.priority === 'KRITICKÉ' ? 'ai-card-prio-crit' : 'ai-card-prio-norm';
   const deadlineStr = s.deadline ? `📅 ${s.deadline}` : '📅 –';
+  const pct = Math.round((s.confidence_score || 0) * 100);
+  const confClass = pct >= 85 ? 'high' : 'med';
+  const confLabel = pct >= 85 ? 'HIGH' : 'MED';
   return `<div class="ai-task-card" data-msg-id="${escHtml(s.message_id)}">
   <div class="ai-card-header">
-    <span class="ai-card-badge">🤖 AI návrh úlohy</span>
-    <span class="ai-card-score">${Math.round((s.confidence_score||0)*100)}%</span>
+    <div class="ai-card-badge">
+      <span class="ai-card-icon">🤖</span>
+      <span class="ai-card-label">AI návrh úlohy</span>
+    </div>
+    <div class="ai-card-confidence">
+      <span class="ai-card-conf-label ${confClass}">${confLabel}</span>
+      <span class="ai-card-conf-pct">${pct}%</span>
+    </div>
   </div>
   <div class="ai-card-title">${escHtml(s.task_title || '')}</div>
   <div class="ai-card-meta">
@@ -835,11 +852,37 @@ async function _updateSuggestionStatus(msgId, id, status) {
   const tok = await _token();
   await fetch(`${SUPABASE_URL}/rest/v1/ai_task_suggestions?id=eq.${encodeURIComponent(id)}`, {
     method: 'PATCH',
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${tok}`,
-      'Content-Type': 'application/json'
-    },
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ status })
   });
+  _updateAiPanel();
+}
+
+// ── AI SUMMARY PANEL ─────────────────────────────────────────────────────────
+function _updateAiPanel() {
+  const panel = document.getElementById('aiSummaryPanel');
+  if (!panel) return;
+  const pending = Object.values(_aiSuggestions).filter(s => s.status === 'pending');
+  const crit    = pending.filter(s => s.priority === 'KRITICKÉ').length;
+  if (!pending.length) { panel.classList.remove('visible'); return; }
+  panel.classList.add('visible');
+  panel.innerHTML = `<span class="ai-summary-dot"></span>${pending.length} návrh${pending.length > 1 ? 'y' : ''}${crit ? ` · <span style="color:#ef4444">${crit} krit.</span>` : ''}`;
+}
+
+// ── SLASH COMMANDS ────────────────────────────────────────────────────────────
+function composeInput(e) {
+  const val = e.target.value;
+  const hint = document.getElementById('composeSlashHint');
+  if (hint) hint.classList.toggle('visible', val === '/');
+}
+
+function applySlash(cmd) {
+  const input = document.getElementById('composeInput');
+  const hint  = document.getElementById('composeSlashHint');
+  if (cmd === 'urgent')  { setType('critical'); if (input) input.value = ''; }
+  if (cmd === 'task')    { setType('ai_note');  if (input) input.value = ''; }
+  if (cmd === 'info')    { setType('info');     if (input) input.value = ''; }
+  if (cmd === 'warning') { setType('warning');  if (input) input.value = ''; }
+  if (hint) hint.classList.remove('visible');
+  if (input) input.focus();
 }
