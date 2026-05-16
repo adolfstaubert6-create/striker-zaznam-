@@ -49,16 +49,20 @@ function renderDrawerContent(drawerId) {
 }
 
 // ─── DRAWER: Otvorené úlohy ──────────────────────────────────
-function buildTaskItem(item, showPerson) {
+function buildTaskItem(item, showPerson, showSplnit) {
   const pid = `dt_${item.rid}_${item.field}_${item.idx}`;
   const person = showPerson ? `<span class="drawer-task-person ${item.cls}">${item.label}</span>` : '';
+  const splnitBtn = showSplnit
+    ? `<button class="drawer-splnit-btn" title="Splniť úlohu"
+         onclick="event.stopPropagation();splnitUlohu('${item.rid}','${item.field}',${item.idx},decodeURIComponent('${encodeURIComponent(item.text)}'))">✅</button>`
+    : '';
   return `<div class="drawer-task ${item.cls}-task" id="${pid}" onclick="toggleDrawerTask(event,'${item.rid}','${item.field}',${item.idx})">
     <span class="drawer-task-icon">❌</span>
     <div style="flex:1;min-width:0">
       <div class="drawer-task-text" id="${pid}_txt" onclick="expandDrawerText(event,'${pid}_txt')">${escHtml(item.text)}</div>
       <div class="drawer-task-from">${escHtml(item.co||'—')} · ${item.datum||'—'}</div>
     </div>
-    ${person}
+    ${splnitBtn}${person}
   </div>`;
 }
 
@@ -94,10 +98,10 @@ function renderDrawerOpen(el) {
     html += `<div class="drawer-empty">✅ Všetky úlohy sú splnené!</div>`;
   } else {
     html += `<div class="drawer-section-label">Otvorené úlohy</div><div class="drawer-task-list">`;
-    items.slice(0, LIMIT).forEach(item => { html += buildTaskItem(item, true); });
+    items.slice(0, LIMIT).forEach(item => { html += buildTaskItem(item, true, true); });
     if (items.length > LIMIT) {
       html += `</div><div class="drawer-tasks-hidden" id="drawerOpenExtra"><div class="drawer-task-list" style="margin-top:5px">`;
-      items.slice(LIMIT).forEach(item => { html += buildTaskItem(item, true); });
+      items.slice(LIMIT).forEach(item => { html += buildTaskItem(item, true, true); });
       html += `</div></div>
       <button class="drawer-action" id="drawerOpenShowAll" onclick="event.stopPropagation();drawerShowAll('drawerOpenExtra','drawerOpenShowAll',${items.length})">Zobraziť všetky (${items.length}) →</button>`;
     }
@@ -191,21 +195,27 @@ function renderDrawerPerson(el, name, field, cls) {
   const btnId = cls === 'st' ? 'drawerStShowAll' : 'drawerSzShowAll';
   const LIMIT = 5;
 
+  const completedId = `completedList_${cls}`;
+
   let html = `<div class="drawer-stat-row">
     <div class="drawer-stat"><div class="drawer-stat-val" style="color:${color}">${items.length}</div><div class="drawer-stat-lbl">Otvorené</div></div>
-    <div class="drawer-stat"><div class="drawer-stat-val" style="color:var(--ok)">${done}</div><div class="drawer-stat-lbl">Hotové</div></div>
+    <div class="drawer-stat drawer-hotove-stat" onclick="event.stopPropagation();toggleCompletedList('${completedId}','${field}')">
+      <div class="drawer-stat-val" style="color:var(--ok)">${done}</div>
+      <div class="drawer-stat-lbl">Hotové ↓</div>
+    </div>
     <div class="drawer-stat"><div class="drawer-stat-val" style="color:var(--muted)">${pct}%</div><div class="drawer-stat-lbl">Splnené</div></div>
   </div>
+  <div class="drawer-completed-wrap" id="${completedId}"></div>
   <div class="drawer-progress-bar"><div class="drawer-progress-fill" style="width:${pct}%;background:${color}"></div></div>`;
 
   if (!items.length) {
     html += `<div class="drawer-empty" style="margin-top:12px">✅ ${name} nemá žiadne otvorené úlohy!</div>`;
   } else {
     html += `<div class="drawer-section-label" style="margin-top:12px">Otvorené úlohy</div><div class="drawer-task-list">`;
-    items.slice(0, LIMIT).forEach(item => { html += buildTaskItem(item, false); });
+    items.slice(0, LIMIT).forEach(item => { html += buildTaskItem(item, false, true); });
     if (items.length > LIMIT) {
       html += `</div><div class="drawer-tasks-hidden" id="${drawerId}"><div class="drawer-task-list" style="margin-top:5px">`;
-      items.slice(LIMIT).forEach(item => { html += buildTaskItem(item, false); });
+      items.slice(LIMIT).forEach(item => { html += buildTaskItem(item, false, true); });
       html += `</div></div>
       <button class="drawer-action" id="${btnId}" onclick="event.stopPropagation();drawerShowAll('${drawerId}','${btnId}',${items.length})">Zobraziť všetky (${items.length}) →</button>`;
     }
@@ -290,6 +300,82 @@ function updateDashboard(){
 
   // Re-render open drawers with fresh data
   if (activeDrawer) renderDrawerContent(activeDrawer.id);
+}
+
+// ── COMPLETED TASKS POPUP ────────────────────────────────────
+function toggleCompletedList(id, field) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const opening = !el.classList.contains('open');
+  el.classList.toggle('open', opening);
+  if (opening) el.innerHTML = buildCompletedList(field);
+}
+
+function buildCompletedList(field) {
+  const completed = [];
+  allRecords.forEach(r => {
+    const arr = r[field];
+    const splnene = r.ulohy_splnene || {};
+    if (!Array.isArray(arr)) return;
+    arr.forEach(task => {
+      if (splnene[task]) completed.push({ text: task, iso: splnene[task] });
+    });
+  });
+
+  if (!completed.length) return '<div class="drawer-completed-empty">Žiadne splnené úlohy</div>';
+
+  completed.sort((a, b) => b.iso.localeCompare(a.iso));
+  return completed.map(c => {
+    const d = new Date(c.iso);
+    const dateStr = isNaN(d) ? c.iso
+      : `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+    return `<div class="drawer-completed-item">
+      <span>✅</span>
+      <div class="drawer-completed-body">
+        <div class="drawer-completed-text">${escHtml(c.text)}</div>
+        <div class="drawer-completed-date">${dateStr}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function splnitUlohu(rid, field, idx, taskText) {
+  // Mark done via existing task_status mechanism
+  setTaskDone(rid, field, idx, true);
+
+  // Update task row visually
+  const taskEl = document.getElementById(`dt_${rid}_${field}_${idx}`);
+  if (taskEl) {
+    taskEl.querySelector('.drawer-task-icon').textContent = '✅';
+    taskEl.style.opacity = '0.4';
+    taskEl.style.pointerEvents = 'none';
+  }
+
+  // Persist completion date to ulohy_splnene on the zaznam record
+  const record = allRecords.find(r => r.id === rid);
+  if (!record) return;
+
+  const today = new Date().toISOString().slice(0, 10);
+  const splnene = Object.assign({}, record.ulohy_splnene || {});
+  splnene[taskText] = today;
+
+  try {
+    const { data: { session } } = await window._supabase.auth.getSession();
+    const token = session?.access_token || SUPABASE_KEY;
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/zaznam?id=eq.${encodeURIComponent(rid)}`, {
+      method: 'PATCH',
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ ulohy_splnene: splnene })
+    });
+    if (res.ok) {
+      record.ulohy_splnene = splnene;
+      setTimeout(() => { updateDashboard(); if (activeDrawer) renderDrawerContent(activeDrawer.id); }, 350);
+    }
+  } catch(e) { console.error('[splnit]', e); }
 }
 
 function setDBStatus(ok){

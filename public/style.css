@@ -290,6 +290,37 @@
     .drawer-action:hover { border-color: var(--accent); color: var(--accent); }
     .drawer-action.danger:hover { border-color: var(--danger); color: var(--danger); }
 
+    /* ─── Splniť button + Hotové completed list ─── */
+    .drawer-splnit-btn {
+      background: transparent; border: 1px solid rgba(16,185,129,.28); color: var(--ok);
+      font-family: 'IBM Plex Mono', monospace; font-size: 10px; padding: 2px 7px;
+      border-radius: 4px; cursor: pointer; transition: all .15s; flex-shrink: 0;
+    }
+    .drawer-splnit-btn:hover { background: var(--ok); color: #000; border-color: var(--ok); }
+
+    .drawer-hotove-stat { cursor: pointer; border-radius: 6px; transition: background .15s; }
+    .drawer-hotove-stat:hover { background: rgba(16,185,129,.07); }
+    .drawer-hotove-stat:hover .drawer-stat-lbl { color: var(--ok); }
+
+    .drawer-completed-wrap {
+      display: none; background: rgba(16,185,129,.04); border: 1px solid rgba(16,185,129,.15);
+      border-radius: 6px; padding: 8px 10px; margin: 6px 0 4px;
+    }
+    .drawer-completed-wrap.open { display: block; }
+    .drawer-completed-empty {
+      font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); text-align: center; padding: 6px 0;
+    }
+    .drawer-completed-item {
+      display: flex; align-items: flex-start; gap: 8px; padding: 5px 0;
+      border-bottom: 1px solid rgba(16,185,129,.08); font-size: 12px;
+    }
+    .drawer-completed-item:last-child { border-bottom: none; }
+    .drawer-completed-body { flex: 1; min-width: 0; }
+    .drawer-completed-text { color: var(--text2); overflow-wrap: anywhere; }
+    .drawer-completed-date {
+      font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--ok); margin-top: 1px;
+    }
+
     /* Progress bar in drawer */
     .drawer-progress-bar {
       height: 4px; border-radius: 2px; background: var(--border);

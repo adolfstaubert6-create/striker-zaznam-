@@ -59,6 +59,11 @@ CREATE POLICY "linked_entries_select" ON public.linked_entries
 CREATE POLICY "linked_entries_insert" ON public.linked_entries
   FOR INSERT TO authenticated WITH CHECK (true);
 
+-- ── HOTOVÉ / COMPLETED TASKS ────────────────────────────────
+-- Run this migration to add completion tracking to the zaznam table.
+-- Format: { "task text": "2026-05-16" }
+ALTER TABLE public.zaznam ADD COLUMN IF NOT EXISTS ulohy_splnene JSONB DEFAULT '{}';
+
 -- ── REALTIME ─────────────────────────────────────────────────
 -- Enable realtime replication for both tables in Supabase Dashboard:
 --   Database → Replication → Supabase Realtime → toggle on chat_messages & linked_entries
