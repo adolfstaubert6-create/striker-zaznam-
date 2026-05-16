@@ -263,6 +263,56 @@
   </div>
 </div>
 
+<!-- ── AI TASK EDIT MODAL ── -->
+<div class="ai-edit-overlay" id="aiEditOverlay" onclick="if(event.target===this)document.getElementById('aiEditOverlay').classList.remove('show')">
+  <div class="ai-edit-modal">
+    <div class="ai-edit-title">✏️ Upraviť návrh úlohy</div>
+    <input type="hidden" id="aiEditMsgId">
+    <div class="ai-edit-field">
+      <label class="ai-edit-label">Názov úlohy</label>
+      <input class="ai-edit-input" id="aiEditTitle" type="text" placeholder="Názov úlohy...">
+    </div>
+    <div class="ai-edit-field">
+      <label class="ai-edit-label">Priradené komu</label>
+      <select class="ai-edit-select" id="aiEditAssigned">
+        <option value="staubert">Staubert</option>
+        <option value="szabo">Szabó</option>
+        <option value="both">Obaja</option>
+      </select>
+    </div>
+    <div class="ai-edit-field">
+      <label class="ai-edit-label">Priorita</label>
+      <select class="ai-edit-select" id="aiEditPriority">
+        <option value="NORMÁLNA">NORMÁLNA</option>
+        <option value="KRITICKÉ">KRITICKÉ</option>
+      </select>
+    </div>
+    <div class="ai-edit-field">
+      <label class="ai-edit-label">Deadline</label>
+      <input class="ai-edit-input" id="aiEditDeadline" type="date">
+    </div>
+    <div class="ai-edit-field">
+      <label class="ai-edit-label">Kategória</label>
+      <select class="ai-edit-select" id="aiEditCategory">
+        <option value="Obchod">Obchod</option>
+        <option value="Technické">Technické</option>
+        <option value="Financie">Financie</option>
+        <option value="HR">HR</option>
+        <option value="Marketing">Marketing</option>
+        <option value="Iné" selected>Iné</option>
+      </select>
+    </div>
+    <div class="ai-edit-field">
+      <label class="ai-edit-label">Popis</label>
+      <textarea class="ai-edit-textarea" id="aiEditDesc" placeholder="Voliteľný popis..."></textarea>
+    </div>
+    <div class="ai-edit-actions">
+      <button class="ai-edit-cancel" onclick="document.getElementById('aiEditOverlay').classList.remove('show')">Zrušiť</button>
+      <button class="ai-edit-save" onclick="aiSaveEdit()">✅ Uložiť a potvrdiť</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── TOAST ── -->
 <div class="toast" id="toast"><span id="toastText"></span></div>
 

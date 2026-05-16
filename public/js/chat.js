@@ -10,6 +10,7 @@ let _currentType   = 'info';
 let _chatChannel   = null;
 let _chatReady     = false;
 let _lastDateSep   = null;
+let _aiSuggestions = {};  // message_id → suggestion object
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
 async function initChat() {
@@ -24,6 +25,7 @@ async function initChat() {
     _renderPinned();
     _renderLinkedEntries();
     _initRealtime();
+    await _loadAiSuggestions();
     _setDBStatus(true);
     scrollToBottom();
     document.getElementById('composeInput').focus();
@@ -195,7 +197,8 @@ function _buildMessageHTML(msg, self, skipDateSep) {
     <button class="${pinBtnClass}" data-pin-id="${escHtml(msg.id)}">${pinLabel}</button>
     <button class="${selBtnClass}" data-sel-id="${escHtml(msg.id)}">${selLabel}</button>
   </div>
-</div>`;
+</div>
+<div class="ai-card-slot" id="ai-slot-${escHtml(msg.id)}"></div>`;
 }
 
 function _needDateSep(iso) {
@@ -286,6 +289,14 @@ async function sendMessage() {
     if (!res.ok) {
       const e = await res.json().catch(() => ({}));
       throw new Error(e.message || `HTTP ${res.status}`);
+    }
+    const saved  = await res.json().catch(() => []);
+    const newMsg = Array.isArray(saved) ? saved[0] : saved;
+    if (newMsg?.id) {
+      const msgId    = newMsg.id;
+      const msgText  = text;
+      const msgAuthor = author;
+      setTimeout(() => _triggerAiExtract(msgId, msgText, msgAuthor), 200);
     }
   } catch (err) {
     console.error('[chat] send:', err);
@@ -670,4 +681,165 @@ function _showToast(text, dur = 3500) {
   tx.textContent = text;
   t.classList.add('show');
   _toastTimer = setTimeout(() => t.classList.remove('show'), dur);
+}
+
+// ── AI TASK EXTRACTION ────────────────────────────────────────────────────────
+async function _loadAiSuggestions() {
+  try {
+    const tok = await _token();
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/ai_task_suggestions?status=eq.pending&order=created_at.desc`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${tok}` } }
+    );
+    if (!res.ok) return;
+    const rows = await res.json();
+    rows.forEach(s => { _aiSuggestions[s.message_id] = s; });
+    _renderAllAiCards();
+  } catch(e) { console.warn('[ai-suggestions] load:', e); }
+}
+
+function _renderAllAiCards() {
+  Object.entries(_aiSuggestions).forEach(([msgId, s]) => {
+    if (s.status === 'pending') _renderAiCard(msgId, s);
+  });
+}
+
+async function _triggerAiExtract(msgId, content, authorId) {
+  try {
+    const res = await fetch('/.netlify/functions/extract-task', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message_id: msgId, content, author_id: authorId })
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.has_task && data.confidence_score > 0.6) {
+      _aiSuggestions[msgId] = { ...data, message_id: msgId, status: 'pending' };
+      _renderAiCard(msgId, _aiSuggestions[msgId]);
+    }
+  } catch(e) { console.warn('[ai-extract]', e); }
+}
+
+function _renderAiCard(msgId, s) {
+  const slot = document.getElementById(`ai-slot-${msgId}`);
+  if (!slot) return;
+  slot.innerHTML = _aiCardHTML(s);
+}
+
+function _aiCardHTML(s) {
+  const assignedLabel = s.assigned_to === 'staubert' ? '👤 Staubert' : s.assigned_to === 'szabo' ? '👤 Szabó' : '👥 Obaja';
+  const prioClass = s.priority === 'KRITICKÉ' ? 'ai-card-prio-crit' : 'ai-card-prio-norm';
+  const deadlineStr = s.deadline ? `📅 ${s.deadline}` : '📅 –';
+  return `<div class="ai-task-card" data-msg-id="${escHtml(s.message_id)}">
+  <div class="ai-card-header">
+    <span class="ai-card-badge">🤖 AI návrh úlohy</span>
+    <span class="ai-card-score">${Math.round((s.confidence_score||0)*100)}%</span>
+  </div>
+  <div class="ai-card-title">${escHtml(s.task_title || '')}</div>
+  <div class="ai-card-meta">
+    <span class="ai-card-chip">${assignedLabel}</span>
+    <span class="ai-card-chip ${prioClass}">${escHtml(s.priority || 'NORMÁLNA')}</span>
+    <span class="ai-card-chip">${deadlineStr}</span>
+  </div>
+  <div class="ai-card-reason">${escHtml(s.reason || '')}</div>
+  <div class="ai-card-actions">
+    <button class="ai-btn ai-btn-confirm" onclick="aiConfirmTask('${escHtml(s.message_id)}')">✅ Potvrdiť</button>
+    <button class="ai-btn ai-btn-edit"    onclick="aiOpenEdit('${escHtml(s.message_id)}')">✏️ Upraviť</button>
+    <button class="ai-btn ai-btn-discard" onclick="aiDiscardTask('${escHtml(s.message_id)}')">❌ Zahodiť</button>
+  </div>
+</div>`;
+}
+
+async function aiConfirmTask(msgId) {
+  const s = _aiSuggestions[msgId];
+  if (!s) return;
+  await _createZaznamFromTask(s);
+  await _updateSuggestionStatus(msgId, s.id, 'confirmed');
+  s.status = 'confirmed';
+  const slot = document.getElementById(`ai-slot-${msgId}`);
+  if (slot) slot.innerHTML = '<div class="ai-card-done">✅ Úloha pridaná do záznamu</div>';
+  _showToast('✅ Úloha vytvorená');
+}
+
+async function aiDiscardTask(msgId) {
+  const s = _aiSuggestions[msgId];
+  if (!s) return;
+  await _updateSuggestionStatus(msgId, s.id, 'discarded');
+  s.status = 'discarded';
+  const slot = document.getElementById(`ai-slot-${msgId}`);
+  if (slot) slot.innerHTML = '';
+  _showToast('🗑 Návrh zahodený');
+}
+
+function aiOpenEdit(msgId) {
+  const s = _aiSuggestions[msgId];
+  if (!s) return;
+  document.getElementById('aiEditMsgId').value    = msgId;
+  document.getElementById('aiEditTitle').value    = s.task_title || '';
+  document.getElementById('aiEditAssigned').value = s.assigned_to || 'both';
+  document.getElementById('aiEditPriority').value = s.priority || 'NORMÁLNA';
+  document.getElementById('aiEditDeadline').value = s.deadline || '';
+  document.getElementById('aiEditCategory').value = s.category || 'Iné';
+  document.getElementById('aiEditDesc').value     = s.description || '';
+  document.getElementById('aiEditOverlay').classList.add('show');
+}
+
+async function aiSaveEdit() {
+  const msgId   = document.getElementById('aiEditMsgId').value;
+  const s       = _aiSuggestions[msgId];
+  if (!s) return;
+  s.task_title  = document.getElementById('aiEditTitle').value.trim();
+  s.assigned_to = document.getElementById('aiEditAssigned').value;
+  s.priority    = document.getElementById('aiEditPriority').value;
+  s.deadline    = document.getElementById('aiEditDeadline').value || null;
+  s.category    = document.getElementById('aiEditCategory').value;
+  s.description = document.getElementById('aiEditDesc').value.trim();
+  document.getElementById('aiEditOverlay').classList.remove('show');
+  await _createZaznamFromTask(s);
+  await _updateSuggestionStatus(msgId, s.id, 'confirmed');
+  s.status = 'confirmed';
+  const slot = document.getElementById(`ai-slot-${msgId}`);
+  if (slot) slot.innerHTML = '<div class="ai-card-done">✅ Úloha upravená a pridaná</div>';
+  _showToast('✅ Úloha uložená');
+}
+
+async function _createZaznamFromTask(s) {
+  const stArr = (s.assigned_to === 'staubert' || s.assigned_to === 'both') ? [s.task_title] : [];
+  const szArr = (s.assigned_to === 'szabo'    || s.assigned_to === 'both') ? [s.task_title] : [];
+  const tok   = await _token();
+  await fetch(`${SUPABASE_URL}/rest/v1/zaznam`, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${tok}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=minimal'
+    },
+    body: JSON.stringify({
+      datum:          new Date().toISOString().slice(0, 10),
+      co_sa_riesilo:  s.task_title,
+      vysledok:       s.description || '',
+      problem:        s.priority === 'KRITICKÉ' ? s.task_title : '',
+      ulohy_staubert: stArr,
+      ulohy_szabo:    szArr,
+      ulohy_splnene:  {},
+      dalsi_krok:     s.deadline ? `Deadline: ${s.deadline}` : '',
+      kategoria:      s.category || 'Iné',
+      tagy:           ['chat', 'auto-ai']
+    })
+  });
+}
+
+async function _updateSuggestionStatus(msgId, id, status) {
+  if (!id) return;
+  const tok = await _token();
+  await fetch(`${SUPABASE_URL}/rest/v1/ai_task_suggestions?id=eq.${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${tok}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ status })
+  });
 }
