@@ -308,17 +308,17 @@ function toggleCompletedList(id, field) {
   if (!el) return;
   const opening = !el.classList.contains('open');
   el.classList.toggle('open', opening);
-  if (opening) el.innerHTML = buildCompletedList(field);
+  if (opening) el.innerHTML = buildCompletedList(field, id);
 }
 
-function buildCompletedList(field) {
+function buildCompletedList(field, containerId) {
   const completed = [];
   allRecords.forEach(r => {
     const arr = r[field];
     const splnene = r.ulohy_splnene || {};
     if (!Array.isArray(arr)) return;
     arr.forEach(task => {
-      if (splnene[task]) completed.push({ text: task, iso: splnene[task] });
+      if (splnene[task]) completed.push({ rid: r.id, text: task, iso: splnene[task] });
     });
   });
 
@@ -329,14 +329,45 @@ function buildCompletedList(field) {
     const d = new Date(c.iso);
     const dateStr = isNaN(d) ? c.iso
       : `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+    const enc = encodeURIComponent(c.text);
     return `<div class="drawer-completed-item">
       <span>✅</span>
-      <div class="drawer-completed-body">
-        <div class="drawer-completed-text">${escHtml(c.text)}</div>
-        <div class="drawer-completed-date">${dateStr}</div>
-      </div>
+      <span class="drawer-completed-text" title="${escHtml(c.text)}">${escHtml(c.text)}</span>
+      <span class="drawer-completed-sep"> · </span>
+      <span class="drawer-completed-date">${dateStr}</span>
+      <button class="drawer-completed-del" title="Odstrániť"
+        onclick="event.stopPropagation();removeCompletedTask('${c.rid}',decodeURIComponent('${enc}'),'${containerId}','${field}')">🗑️</button>
     </div>`;
   }).join('');
+}
+
+async function removeCompletedTask(rid, taskText, containerId, field) {
+  const record = allRecords.find(r => r.id === rid);
+  if (!record) return;
+
+  const splnene = Object.assign({}, record.ulohy_splnene || {});
+  delete splnene[taskText];
+
+  try {
+    const { data: { session } } = await window._supabase.auth.getSession();
+    const token = session?.access_token || SUPABASE_KEY;
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/zaznam?id=eq.${encodeURIComponent(rid)}`, {
+      method: 'PATCH',
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ ulohy_splnene: splnene })
+    });
+    if (res.ok) {
+      record.ulohy_splnene = splnene;
+      // Refresh completed list in-place — list stays open, counts update
+      const listEl = document.getElementById(containerId);
+      if (listEl) listEl.innerHTML = buildCompletedList(field, containerId);
+      updateDashboard();
+    }
+  } catch(e) { console.error('[remove-splnit]', e); }
 }
 
 async function splnitUlohu(rid, field, idx, taskText) {

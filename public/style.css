@@ -311,15 +311,23 @@
       font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); text-align: center; padding: 6px 0;
     }
     .drawer-completed-item {
-      display: flex; align-items: flex-start; gap: 8px; padding: 5px 0;
+      display: flex; align-items: center; gap: 5px; padding: 5px 0;
       border-bottom: 1px solid rgba(16,185,129,.08); font-size: 12px;
     }
     .drawer-completed-item:last-child { border-bottom: none; }
-    .drawer-completed-body { flex: 1; min-width: 0; }
-    .drawer-completed-text { color: var(--text2); overflow-wrap: anywhere; }
-    .drawer-completed-date {
-      font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--ok); margin-top: 1px;
+    .drawer-completed-text {
+      flex: 1; min-width: 0; color: var(--text2);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
+    .drawer-completed-sep { color: var(--muted); flex-shrink: 0; }
+    .drawer-completed-date {
+      font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--ok); flex-shrink: 0;
+    }
+    .drawer-completed-del {
+      background: none; border: none; cursor: pointer;
+      font-size: 12px; padding: 0 2px; opacity: .4; transition: opacity .15s; flex-shrink: 0;
+    }
+    .drawer-completed-del:hover { opacity: 1; }
 
     /* Progress bar in drawer */
     .drawer-progress-bar {
