@@ -295,6 +295,19 @@
 }
 .chat-msg-author.st { color: var(--st); }
 .chat-msg-author.sz { color: var(--sz); }
+.chat-msg-author.ai { color: var(--chat-orange); }
+/* AI agent messages: full-width system style */
+.chat-msg.agent-msg {
+  max-width: 90%;
+  align-self: center;
+}
+.chat-msg.agent-msg .chat-msg-bubble {
+  background: linear-gradient(135deg,rgba(255,107,43,.06) 0%,rgba(14,14,18,.97) 100%) !important;
+  border: 1px solid rgba(255,107,43,.28) !important;
+  border-left: 3px solid var(--chat-orange) !important;
+  border-radius: 8px !important;
+  white-space: pre-wrap;
+}
 
 .chat-msg-time {
   font-family: 'IBM Plex Mono', monospace;

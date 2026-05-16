@@ -169,8 +169,9 @@ function _appendMessage(msg, animate) {
 }
 
 function _buildMessageHTML(msg, self, skipDateSep) {
-  const isSelf = msg.author === self;
-  const authorClass = msg.author.toLowerCase().includes('staubert') ? 'st' : 'sz';
+  const isAgent = msg.author === 'ai-agent';
+  const isSelf  = !isAgent && msg.author === self;
+  const authorClass = isAgent ? 'ai' : msg.author.toLowerCase().includes('staubert') ? 'st' : 'sz';
   const timeStr = _fmtTime(msg.created_at);
   const selectedClass = _selectedIds.has(msg.id) ? ' selected' : '';
 
@@ -191,9 +192,12 @@ function _buildMessageHTML(msg, self, skipDateSep) {
   const dateSep = hasSep ? _buildDateSep(msg.created_at) : '';
   const groupCls = grouped ? ' grouped' : '';
 
-  return `${dateSep}<div class="chat-msg ${isSelf ? 'self' : 'other'}${selectedClass}${groupCls}" data-msg-id="${escHtml(msg.id)}">
+  const agentCls   = isAgent ? ' agent-msg' : '';
+  const authorDisp  = isAgent ? '🤖 AI Agent' : msg.author;
+
+  return `${dateSep}<div class="chat-msg ${isSelf ? 'self' : 'other'}${selectedClass}${groupCls}${agentCls}" data-msg-id="${escHtml(msg.id)}">
   <div class="chat-msg-header">
-    <span class="chat-msg-author ${authorClass}">${escHtml(msg.author)}</span>
+    <span class="chat-msg-author ${authorClass}">${escHtml(authorDisp)}</span>
     <span class="chat-msg-time">${timeStr}</span>
     <span class="chat-type-badge ctb-${msg.type}">${_typeLabel(msg.type)}</span>
   </div>
