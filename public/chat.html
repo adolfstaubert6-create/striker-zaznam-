@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>STRIKER – Team Chat</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#000000">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="STRIKER">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="apple-touch-icon" href="/icon-192x192.png">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/css/chat.css">
+</head>
+<body class="login-active">
+
+<!-- ── LOGIN SCREEN ── -->
+<div id="loginScreen" style="display:flex;position:fixed;inset:0;z-index:9999;background:#080808;align-items:center;justify-content:center;flex-direction:column;overflow:hidden">
+  <div class="login-card">
+    <div class="login-logo">STRIKER <em>/ Chat</em></div>
+    <div class="login-subtitle">Team Chat · Prihlásenie</div>
+    <form class="login-form" onsubmit="handleLoginSubmit(event)">
+      <div class="login-field">
+        <label class="login-label">Email</label>
+        <input class="login-input" id="loginEmail" type="email" placeholder="vas@email.sk" autocomplete="email" required />
+      </div>
+      <div class="login-field">
+        <label class="login-label">Heslo</label>
+        <div class="login-pw-wrap">
+          <input class="login-input" id="loginPassword" type="password" placeholder="••••••••" autocomplete="current-password" required />
+          <button type="button" id="togglePwBtn" class="login-pw-toggle" onclick="togglePasswordVisibility()">👁</button>
+        </div>
+      </div>
+      <div class="login-error" id="loginError"></div>
+      <button class="login-btn" id="loginBtn" type="submit">Prihlásiť sa →</button>
+    </form>
+  </div>
+</div>
+
+<!-- ── APP ── -->
+<div id="appWrapper" style="display:none">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:12px">
+      <a href="/"
+         style="color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:10px;
+                text-decoration:none;border:1px solid var(--border);padding:5px 10px;
+                border-radius:5px;transition:all .15s;letter-spacing:.5px"
+         onmouseover="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'"
+         onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+        ⬅ Centrum
+      </a>
+      <div class="logo">STRIKER <em>/ Team Chat</em></div>
+    </div>
+    <div class="topbar-right">
+      <div class="user-selector">
+        <button class="user-btn st" data-user="Staubert" onclick="setCurrentUser('Staubert')">ST</button>
+        <button class="user-btn sz" data-user="Szabó"    onclick="setCurrentUser('Szabó')">SZ</button>
+        <span class="user-label" id="currentUserLabel">–</span>
+      </div>
+      <button class="logout-btn" onclick="signOut()" title="Odhlásiť sa">⏻</button>
+      <div class="sys-row">
+        <div class="sys-item"><span class="sys-dot" id="dotDB"></span><span>DB</span></div>
+        <div class="sys-item"><span class="sys-dot dim" id="dotRT"></span><span>RT</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHAT LAYOUT -->
+  <div class="chat-layout">
+
+    <!-- ─ SIDEBAR ─ -->
+    <div class="chat-sidebar">
+
+      <!-- Pinned messages -->
+      <div class="chat-sidebar-section">
+        <div class="chat-sidebar-label">📌 Pripnuté správy</div>
+        <div class="pinned-list" id="pinnedList">
+          <div class="sidebar-empty">Žiadne pripnuté správy</div>
+        </div>
+      </div>
+
+      <!-- Linked entries -->
+      <div class="chat-sidebar-entries">
+        <div class="chat-sidebar-entries-head">
+          <div class="chat-sidebar-label" style="margin-bottom:0">🔗 Prepojené záznamy</div>
+        </div>
+        <div class="linked-entries-list" id="linkedEntriesList">
+          <div class="sidebar-empty">Žiadne záznamy</div>
+        </div>
+      </div>
+
+    </div><!-- /sidebar -->
+
+    <!-- ─ MAIN CHAT ─ -->
+    <div class="chat-main">
+
+      <!-- Chat header -->
+      <div class="chat-header">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="chat-title">💬 #striker-team</span>
+          <span id="chatOnlineIndicator"
+                style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted)">
+            · načítavam
+          </span>
+        </div>
+        <div class="chat-header-actions">
+          <button class="btn-sm" id="btnSelectMode" onclick="toggleSelectMode()"
+                  style="font-size:10px">☑ Vybrať</button>
+          <button class="btn-sm" onclick="scrollToBottom()"
+                  title="Ísť na koniec" style="font-size:12px;padding:5px 10px">↓</button>
+        </div>
+      </div>
+
+      <!-- Select bar (hidden by default) -->
+      <div class="select-bar" id="selectBar">
+        <span class="select-bar-info" id="selectBarInfo">0 správ vybraných</span>
+        <div style="display:flex;gap:6px">
+          <button class="btn-sm"
+                  style="font-size:10px;border-color:var(--t-ai-b);color:var(--t-ai)"
+                  onmouseover="this.style.background='var(--t-ai)';this.style.color='#fff'"
+                  onmouseout="this.style.background='transparent';this.style.color='var(--t-ai)'"
+                  onclick="openCreateEntry()">🔗 Vytvoriť záznam</button>
+          <button class="btn-sm" style="font-size:10px" onclick="cancelSelectMode()">Zrušiť</button>
+        </div>
+      </div>
+
+      <!-- Messages -->
+      <div class="chat-messages" id="chatMessages">
+        <div class="chat-empty" id="chatEmpty">
+          <span class="chat-empty-icon">💬</span>
+          Žiadne správy. Začni konverzáciu.
+        </div>
+      </div>
+
+      <!-- Compose -->
+      <div class="chat-compose">
+        <!-- Type selector -->
+        <div class="compose-type-row">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);
+                       line-height:22px;margin-right:2px;letter-spacing:1px">TYP:</span>
+          <button class="type-btn act-info" data-type="info"     onclick="setType('info')">info</button>
+          <button class="type-btn"          data-type="warning"  onclick="setType('warning')">warning</button>
+          <button class="type-btn"          data-type="critical" onclick="setType('critical')">critical</button>
+          <button class="type-btn"          data-type="ai_note"  onclick="setType('ai_note')">ai note</button>
+        </div>
+        <!-- Input row -->
+        <div class="compose-row">
+          <textarea
+            class="compose-input"
+            id="composeInput"
+            placeholder="Napíšte správu… (Enter = odoslať, Shift+Enter = nový riadok)"
+            rows="1"
+            onkeydown="composeKeydown(event)"
+            oninput="autoResize(this)"></textarea>
+          <button class="compose-send" id="composeSend" onclick="sendMessage()"
+                  title="Odoslať (Enter)">↑</button>
+        </div>
+      </div>
+
+    </div><!-- /chat-main -->
+
+  </div><!-- /chat-layout -->
+
+</div><!-- /appWrapper -->
+
+<!-- ── LINKED ENTRY CREATE MODAL ── -->
+<div class="entry-modal-overlay" id="entryModalOverlay" onclick="entryModalBgClick(event)">
+  <div class="entry-modal" id="entryModal">
+
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <div class="entry-modal-title">🔗 Vytvoriť prepojený záznam</div>
+      <button class="btn-sm" onclick="closeEntryModal()"
+              style="font-size:11px;flex-shrink:0;padding:5px 10px">✕</button>
+    </div>
+    <div class="entry-modal-sub" id="entryMsgCount">Prepája 0 správ</div>
+
+    <div class="entry-field">
+      <label class="entry-label">Názov *</label>
+      <input class="entry-input" id="entryTitle" type="text"
+             placeholder="Napr.: Porada 15.5. – rozhodnutia" />
+    </div>
+    <div class="entry-field">
+      <label class="entry-label">Zhrnutie</label>
+      <textarea class="entry-textarea" id="entrySummary" rows="3"
+                placeholder="Čo sa riešilo, kontext…"></textarea>
+    </div>
+    <div class="entry-field">
+      <label class="entry-label">Rozhodnutia</label>
+      <textarea class="entry-textarea" id="entryDecisions" rows="3"
+                placeholder="Aké rozhodnutia padli…"></textarea>
+    </div>
+    <div class="entry-field">
+      <label class="entry-label">Úlohy</label>
+      <textarea class="entry-textarea" id="entryTasks" rows="3"
+                placeholder="Každá úloha na nový riadok…"></textarea>
+    </div>
+    <div class="entry-field">
+      <label class="entry-label">Kritické body</label>
+      <textarea class="entry-textarea" id="entryCritical" rows="2"
+                placeholder="Riziká, bloky, kritické informácie…"></textarea>
+    </div>
+
+    <div class="entry-modal-actions">
+      <button class="btn-sm" onclick="closeEntryModal()">Zrušiť</button>
+      <button class="btn-entry-save" id="btnSaveEntry" onclick="saveEntry()">
+        🔗 Uložiť záznam
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── LINKED ENTRY DETAIL MODAL ── -->
+<div class="entry-modal-overlay" id="entryDetailOverlay" onclick="entryDetailBgClick(event)">
+  <div class="entry-detail-modal" id="entryDetailModal">
+
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+      <div style="min-width:0">
+        <div class="entry-modal-title" id="detailEntryTitle" style="overflow-wrap:anywhere">–</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-top:4px"
+             id="detailEntryMeta">–</div>
+      </div>
+      <button class="btn-sm" onclick="closeEntryDetail()"
+              style="font-size:11px;flex-shrink:0;padding:5px 10px">✕</button>
+    </div>
+
+    <!-- Dynamic sections (summary / decisions / tasks / critical) -->
+    <div id="detailEntrySections" style="display:flex;flex-direction:column;gap:12px"></div>
+
+    <!-- Linked messages -->
+    <div>
+      <div class="entry-section-label">Prepojené správy</div>
+      <div id="detailEntryMessages"
+           style="display:flex;flex-direction:column;gap:6px;
+                  background:var(--surface);border:1px solid var(--border);
+                  border-radius:6px;padding:10px 12px"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── TOAST ── -->
+<div class="toast" id="toast"><span id="toastText"></span></div>
+
+<!-- ── INIT SCRIPTS ── -->
+<script>
+const SUPABASE_URL = 'https://jjvegnwqipmcipwvdjje.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpqdmVnbndxaXBtY2lwd3ZkamplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MTczMTYsImV4cCI6MjA5MzM5MzMxNn0.Jizw9XYzoGlo6teVuo6POx0zybcLjGNwrKGhtTmWXZo';
+
+// Zdieľaný Supabase klient — požadovaný auth.js
+var _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Called by auth.js after successful login — waits for chat.js defer to load
+function _initApp() {
+  if (typeof initChat === 'undefined') { setTimeout(_initApp, 80); return; }
+  initChat();
+}
+
+// Allow read-only topbar user button click (auth.js handles actual identity)
+function setCurrentUser(name) {
+  document.querySelectorAll('.user-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.user === name);
+  });
+}
+</script>
+<script src="/auth.js"></script>
+<script>initAuth();</script>
+<script src="/js/chat.js" defer></script>
+</body>
+</html>
