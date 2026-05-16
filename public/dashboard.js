@@ -199,13 +199,12 @@ function renderDrawerPerson(el, name, field, cls) {
 
   let html = `<div class="drawer-stat-row">
     <div class="drawer-stat"><div class="drawer-stat-val" style="color:${color}">${items.length}</div><div class="drawer-stat-lbl">Otvorené</div></div>
-    <div class="drawer-stat drawer-hotove-stat" onclick="event.stopPropagation();toggleCompletedList('${completedId}','${field}')">
+    <div class="drawer-stat drawer-hotove-stat" onclick="event.stopPropagation();openHistoryModal('${cls}')">
       <div class="drawer-stat-val" style="color:var(--ok)">${done}</div>
-      <div class="drawer-stat-lbl">Hotové ↓</div>
+      <div class="drawer-stat-lbl">Hotové ↗</div>
     </div>
     <div class="drawer-stat"><div class="drawer-stat-val" style="color:var(--muted)">${pct}%</div><div class="drawer-stat-lbl">Splnené</div></div>
   </div>
-  <div class="drawer-completed-wrap" id="${completedId}"></div>
   <div class="drawer-progress-bar"><div class="drawer-progress-fill" style="width:${pct}%;background:${color}"></div></div>`;
 
   if (!items.length) {
