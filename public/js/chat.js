@@ -458,6 +458,18 @@ function entryModalBgClick(e) {
   if (e.target === document.getElementById('entryModalOverlay')) closeEntryModal();
 }
 
+// Split free-text tasks into Staubert / Szabó arrays by line prefix
+function _parseTasksByPerson(tasksText) {
+  if (!tasksText) return { st: [], sz: [] };
+  const st = [], sz = [];
+  tasksText.split('\n').map(l => l.trim()).filter(Boolean).forEach(line => {
+    if (/^szab[oó]\s*:/i.test(line)) sz.push(line.replace(/^szab[oó]\s*:\s*/i, '').trim());
+    else if (/^staubert\s*:/i.test(line)) st.push(line.replace(/^staubert\s*:\s*/i, '').trim());
+    else st.push(line);
+  });
+  return { st, sz };
+}
+
 async function saveEntry() {
   const title = (document.getElementById('entryTitle')?.value || '').trim();
   if (!title) { _showToast('Zadaj názov záznamu'); document.getElementById('entryTitle')?.focus(); return; }
@@ -492,9 +504,32 @@ async function saveEntry() {
       const e = await res.json().catch(() => ({}));
       throw new Error(e.message || `HTTP ${res.status}`);
     }
+    // Mirror to zaznam so it appears in História tab
+    const { st: ulohySt, sz: ulohySz } = _parseTasksByPerson(payload.tasks || '');
+    await fetch(`${SUPABASE_URL}/rest/v1/zaznam`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${tok}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal'
+      },
+      body: JSON.stringify({
+        datum:          new Date().toISOString().slice(0, 10),
+        co_sa_riesilo:  title,
+        vysledok:       payload.summary          || '',
+        problem:        payload.critical_points  || '',
+        ulohy_staubert: ulohySt,
+        ulohy_szabo:    ulohySz,
+        dalsi_krok:     payload.decisions        || '',
+        kategoria:      'Chat',
+        tagy:           ['chat']
+      })
+    });
+
     closeEntryModal();
     cancelSelectMode();
-    _showToast('🔗 Záznam uložený');
+    _showToast('🔗 Záznam uložený a pridaný do histórie');
   } catch (err) {
     console.error('[chat] saveEntry:', err);
     _showToast('❌ Chyba: ' + err.message);
