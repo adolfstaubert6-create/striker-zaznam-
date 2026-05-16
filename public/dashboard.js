@@ -199,7 +199,7 @@ function renderDrawerPerson(el, name, field, cls) {
 
   let html = `<div class="drawer-stat-row">
     <div class="drawer-stat"><div class="drawer-stat-val" style="color:${color}">${items.length}</div><div class="drawer-stat-lbl">Otvorené</div></div>
-    <div class="drawer-stat drawer-hotove-stat" id="hotoveBtn_${cls}" style="cursor:pointer">
+    <div class="drawer-stat drawer-hotove-stat" data-history-user="${cls}" style="cursor:pointer">
       <div class="drawer-stat-val" style="color:var(--ok)">${done}</div>
       <div class="drawer-stat-lbl">Hotové ↗</div>
     </div>
@@ -221,15 +221,6 @@ function renderDrawerPerson(el, name, field, cls) {
     html += items.length <= LIMIT ? `</div>` : ``;
   }
   el.innerHTML = html;
-
-  // Bind HOTOVÉ click via addEventListener — immune to global-scope timing issues
-  const hotoveBtn = document.getElementById(`hotoveBtn_${cls}`);
-  if (hotoveBtn) {
-    hotoveBtn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      window.openHistoryModal(cls);
-    });
-  }
 }
 
 // ─── DRAWER: Stav systému ────────────────────────────────────
@@ -690,3 +681,15 @@ async function hmDeleteTask(rid, taskText, field) {
     }
   } catch(e) { console.error('[hmDelete]', e); }
 }
+
+document.addEventListener('click', (e) => {
+  const trigger = e.target.closest('[data-history-user]');
+  if (!trigger) return;
+  const user = trigger.dataset.historyUser;
+  console.log('Opening history for:', user);
+  if (typeof window.openHistoryModal === 'function') {
+    window.openHistoryModal(user);
+  } else {
+    console.error('openHistoryModal not defined');
+  }
+});
