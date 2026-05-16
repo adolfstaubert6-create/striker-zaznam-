@@ -199,7 +199,7 @@ function renderDrawerPerson(el, name, field, cls) {
 
   let html = `<div class="drawer-stat-row">
     <div class="drawer-stat"><div class="drawer-stat-val" style="color:${color}">${items.length}</div><div class="drawer-stat-lbl">Otvorené</div></div>
-    <div class="drawer-stat drawer-hotove-stat" onclick="event.stopPropagation();openHistoryModal('${cls}')">
+    <div class="drawer-stat drawer-hotove-stat" onclick="event.stopPropagation();window.openHistoryModal('${cls}')">
       <div class="drawer-stat-val" style="color:var(--ok)">${done}</div>
       <div class="drawer-stat-lbl">Hotové ↗</div>
     </div>
@@ -499,7 +499,7 @@ function renderOpenTasks(){
 let hmCurrentField = 'ulohy_staubert';
 let hmAllTasks = [];
 
-function openHistoryModal(person) {
+window.openHistoryModal = function openHistoryModal(person) {
   hmCurrentField = person === 'st' ? 'ulohy_staubert' : 'ulohy_szabo';
   const name = person === 'st' ? 'Staubert' : 'Szabó';
   document.getElementById('hmTitle').textContent = `História – ${name}`;
@@ -508,12 +508,12 @@ function openHistoryModal(person) {
   hmApplyFilters();
   document.getElementById('taskHistoryModal').style.display = 'flex';
   document.body.style.overflow = 'hidden';
-}
+};
 
-function closeHistoryModal() {
+window.closeHistoryModal = function closeHistoryModal() {
   document.getElementById('taskHistoryModal').style.display = 'none';
   document.body.style.overflow = '';
-}
+};
 
 function hmCollectTasks() {
   hmAllTasks = [];
