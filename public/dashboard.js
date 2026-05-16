@@ -199,7 +199,7 @@ function renderDrawerPerson(el, name, field, cls) {
 
   let html = `<div class="drawer-stat-row">
     <div class="drawer-stat"><div class="drawer-stat-val" style="color:${color}">${items.length}</div><div class="drawer-stat-lbl">Otvorené</div></div>
-    <div class="drawer-stat drawer-hotove-stat" onclick="event.stopPropagation();window.openHistoryModal('${cls}')">
+    <div class="drawer-stat drawer-hotove-stat" id="hotoveBtn_${cls}" style="cursor:pointer">
       <div class="drawer-stat-val" style="color:var(--ok)">${done}</div>
       <div class="drawer-stat-lbl">Hotové ↗</div>
     </div>
@@ -221,6 +221,15 @@ function renderDrawerPerson(el, name, field, cls) {
     html += items.length <= LIMIT ? `</div>` : ``;
   }
   el.innerHTML = html;
+
+  // Bind HOTOVÉ click via addEventListener — immune to global-scope timing issues
+  const hotoveBtn = document.getElementById(`hotoveBtn_${cls}`);
+  if (hotoveBtn) {
+    hotoveBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      window.openHistoryModal(cls);
+    });
+  }
 }
 
 // ─── DRAWER: Stav systému ────────────────────────────────────
@@ -499,15 +508,26 @@ function renderOpenTasks(){
 let hmCurrentField = 'ulohy_staubert';
 let hmAllTasks = [];
 
-window.openHistoryModal = function openHistoryModal(person) {
-  hmCurrentField = person === 'st' ? 'ulohy_staubert' : 'ulohy_szabo';
-  const name = person === 'st' ? 'Staubert' : 'Szabó';
-  document.getElementById('hmTitle').textContent = `História – ${name}`;
-  hmClearFilters();
-  hmCollectTasks();
-  hmApplyFilters();
-  document.getElementById('taskHistoryModal').style.display = 'flex';
+window.openHistoryModal = function(person) {
+  // Show modal immediately — nothing can block this
+  const modal = document.getElementById('taskHistoryModal');
+  if (!modal) return;
+  modal.style.display = 'flex';
   document.body.style.overflow = 'hidden';
+
+  try {
+    hmCurrentField = person === 'st' ? 'ulohy_staubert' : 'ulohy_szabo';
+    const name = person === 'st' ? 'Staubert' : 'Szabó';
+    const titleEl = document.getElementById('hmTitle');
+    if (titleEl) titleEl.textContent = `História – ${name}`;
+    hmClearFilters();
+    hmCollectTasks();
+    hmApplyFilters();
+  } catch(e) {
+    console.error('[openHistoryModal]', e);
+    const body = document.getElementById('hmBody');
+    if (body) body.innerHTML = '<div style="color:#666;font-family:monospace;padding:40px;text-align:center">Chyba pri načítaní: ' + e.message + '</div>';
+  }
 };
 
 window.closeHistoryModal = function closeHistoryModal() {
