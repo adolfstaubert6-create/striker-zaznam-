@@ -436,11 +436,20 @@ async function aiAnalyzeEntry() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
 
+    // Parse "Person: task" lines into 3 modal fields
+    const stLines = [], szLines = [], bothLines = [];
+    (data.ulohy || '').split('\n').map(l => l.trim()).filter(Boolean).forEach(line => {
+      if      (/^staubert\s*:/i.test(line)) stLines.push(line.replace(/^staubert\s*:\s*/i,   '').trim());
+      else if (/^szab[oó]\s*:/i.test(line)) szLines.push(line.replace(/^szab[oó]\s*:\s*/i,   '').trim());
+      else if (/^obaja\s*:/i.test(line))    bothLines.push(line.replace(/^obaja\s*:\s*/i,     '').trim());
+      else                                  bothLines.push(line);
+    });
+
     const fill = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
     fill('entryDecisions',  data.rozhodnutia);
-    fill('entryTasksSt',    data.ulohy_staubert);
-    fill('entryTasksSz',    data.ulohy_szabo);
-    fill('entryTasksObaja', data.ulohy_obaja);
+    fill('entryTasksSt',    stLines.join('\n'));
+    fill('entryTasksSz',    szLines.join('\n'));
+    fill('entryTasksObaja', bothLines.join('\n'));
     fill('entryCritical',   data.kriticke_body);
 
     _showToast('🤖 AI doplnilo polia');

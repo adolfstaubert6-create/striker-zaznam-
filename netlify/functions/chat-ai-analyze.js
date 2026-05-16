@@ -1,6 +1,7 @@
 // ── STRIKER Team Chat – AI Analysis ──
 // POST { transcript: string }
-// Returns { rozhodnutia, ulohy_staubert, ulohy_szabo, ulohy_obaja, kriticke_body }
+// Returns { rozhodnutia, ulohy, kriticke_body }
+// ulohy format: "Staubert: task\nSzabó: task\nObaja: task"
 
 const https = require('https');
 
@@ -31,15 +32,15 @@ exports.handler = async (event) => {
   const systemPrompt =
     'Si asistent pre firmu STRIKER. Analyzuj konverzáciu a priraď úlohy podľa týchto pravidiel:\n' +
     '1. Kto dal sľub ("ja to urobím", "pozriem sa na to", "zariadim") → priraď tejto osobe\n' +
-    '2. Ak je meno priamo spomenuté ("Szabó urob", "Adolf zavolaj", "Staubert skontroluj") → priraď tejto osobe\n' +
+    '2. Ak je meno priamo spomenuté ("Szabó urob", "Staubert skontroluj", "Adolf zavolaj") → priraď tejto osobe\n' +
     '3. Podľa témy: klient/zmluva/obchod/financie/stretnutie → Staubert; systém/dokument/technické/dodávateľ → Szabó\n' +
-    '4. Urgentné (urgent/asap/hneď/čo najskôr) → zaznač ako KRITICKÉ a pridaj deadline ak je uvedený\n' +
-    '5. Ak nie je jasné komu → priraď obom (ulohy_obaja)\n' +
-    'Odpovedaj LEN v JSON bez markdown.';
+    '4. Urgentné (urgent/asap/hneď/čo najskôr) → začni riadok s "KRITICKÉ:" pred úlohou a pridaj deadline ak je uvedený\n' +
+    '5. Ak nie je jasné komu → použij prefix "Obaja:"\n' +
+    'Každú úlohu uveď na nový riadok vo formáte "Meno: úloha". Odpovedaj LEN v JSON bez markdown.';
 
   const userMessage =
     'Analyzuj túto konverzáciu a navrhni v slovenčine. Odpovedz LEN v JSON bez markdown:\n' +
-    '{"rozhodnutia": "čo bolo rozhodnuté", "ulohy_staubert": "úlohy pre Staubert, každá na nový riadok", "ulohy_szabo": "úlohy pre Szabó, každá na nový riadok", "ulohy_obaja": "úlohy pre oboch ak nie je jasné, každá na nový riadok", "kriticke_body": "riziká a urgentné veci s deadlinom ak je uvedený"}\n\n' +
+    '{"rozhodnutia": "čo bolo rozhodnuté", "ulohy": "Staubert: úloha1\\nStaubert: úloha2\\nSzabó: úloha1\\nObaja: spoločná úloha", "kriticke_body": "riziká a urgentné veci s deadlinom ak je uvedený"}\n\n' +
     'Konverzácia: ' + transcript;
 
   const requestBody = JSON.stringify({
@@ -90,18 +91,16 @@ exports.handler = async (event) => {
       aiData = JSON.parse(cleaned);
     } catch {
       // Fallback: surface raw text so nothing is lost
-      aiData = { rozhodnutia: rawText, ulohy_staubert: '', ulohy_szabo: '', ulohy_obaja: '', kriticke_body: '' };
+      aiData = { rozhodnutia: rawText, ulohy: '', kriticke_body: '' };
     }
 
     return {
       statusCode: 200,
       headers: CORS,
       body: JSON.stringify({
-        rozhodnutia:    String(aiData.rozhodnutia    || ''),
-        ulohy_staubert: String(aiData.ulohy_staubert || ''),
-        ulohy_szabo:    String(aiData.ulohy_szabo    || ''),
-        ulohy_obaja:    String(aiData.ulohy_obaja    || ''),
-        kriticke_body:  String(aiData.kriticke_body  || '')
+        rozhodnutia:   String(aiData.rozhodnutia   || ''),
+        ulohy:         String(aiData.ulohy         || ''),
+        kriticke_body: String(aiData.kriticke_body || '')
       })
     };
 
