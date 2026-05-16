@@ -400,7 +400,7 @@ function openCreateEntry() {
   if (sub) sub.textContent = `Prepája ${_selectedIds.size} správ`;
 
   // Clear manual fields
-  ['entryTitle','entryDecisions','entryTasks','entryCritical'].forEach(id => {
+  ['entryTitle','entryDecisions','entryTasksSt','entryTasksSz','entryTasksObaja','entryCritical'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -437,9 +437,11 @@ async function aiAnalyzeEntry() {
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
 
     const fill = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
-    fill('entryDecisions', data.rozhodnutia);
-    fill('entryTasks',     data.ulohy);
-    fill('entryCritical',  data.kriticke_body);
+    fill('entryDecisions',  data.rozhodnutia);
+    fill('entryTasksSt',    data.ulohy_staubert);
+    fill('entryTasksSz',    data.ulohy_szabo);
+    fill('entryTasksObaja', data.ulohy_obaja);
+    fill('entryCritical',   data.kriticke_body);
 
     _showToast('🤖 AI doplnilo polia');
   } catch (err) {
@@ -478,13 +480,22 @@ async function saveEntry() {
   btn.disabled = true;
   btn.textContent = '⏳ Ukladám...';
 
+  const stTasks   = (document.getElementById('entryTasksSt')?.value    || '').trim();
+  const szTasks   = (document.getElementById('entryTasksSz')?.value    || '').trim();
+  const bothTasks = (document.getElementById('entryTasksObaja')?.value || '').trim();
+  const combined  = [
+    stTasks   && `[Staubert]\n${stTasks}`,
+    szTasks   && `[Szabó]\n${szTasks}`,
+    bothTasks && `[Obaja]\n${bothTasks}`
+  ].filter(Boolean).join('\n\n');
+
   const payload = {
     message_ids:     [..._selectedIds],
     title,
-    summary:         (document.getElementById('entrySummary')?.value || '').trim() || null,
+    summary:         (document.getElementById('entrySummary')?.value   || '').trim() || null,
     decisions:       (document.getElementById('entryDecisions')?.value || '').trim() || null,
-    tasks:           (document.getElementById('entryTasks')?.value || '').trim() || null,
-    critical_points: (document.getElementById('entryCritical')?.value || '').trim() || null,
+    tasks:           combined || null,
+    critical_points: (document.getElementById('entryCritical')?.value  || '').trim() || null,
     created_by:      getAuthUserName()
   };
 
@@ -505,7 +516,8 @@ async function saveEntry() {
       throw new Error(e.message || `HTTP ${res.status}`);
     }
     // Mirror to zaznam so it appears in História tab
-    const { st: ulohySt, sz: ulohySz } = _parseTasksByPerson(payload.tasks || '');
+    const _toLines = t => t ? t.split('\n').map(l => l.trim()).filter(Boolean) : [];
+    const bothArr  = _toLines(bothTasks);
     await fetch(`${SUPABASE_URL}/rest/v1/zaznam`, {
       method: 'POST',
       headers: {
@@ -517,11 +529,11 @@ async function saveEntry() {
       body: JSON.stringify({
         datum:          new Date().toISOString().slice(0, 10),
         co_sa_riesilo:  title,
-        vysledok:       payload.summary          || '',
-        problem:        payload.critical_points  || '',
-        ulohy_staubert: ulohySt,
-        ulohy_szabo:    ulohySz,
-        dalsi_krok:     payload.decisions        || '',
+        vysledok:       payload.summary         || '',
+        problem:        payload.critical_points || '',
+        ulohy_staubert: [..._toLines(stTasks),  ...bothArr],
+        ulohy_szabo:    [..._toLines(szTasks),   ...bothArr],
+        dalsi_krok:     payload.decisions       || '',
         kategoria:      'Chat',
         tagy:           ['chat']
       })
