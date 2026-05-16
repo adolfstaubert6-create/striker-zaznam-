@@ -420,6 +420,36 @@ function openCreateEntry() {
   setTimeout(() => document.getElementById('entryTitle')?.focus(), 80);
 }
 
+async function aiAnalyzeEntry() {
+  const transcript = (document.getElementById('entrySummary')?.value || '').trim();
+  if (!transcript) { _showToast('Najprv vyber správy – ZHRNUTIE je prázdne'); return; }
+
+  const btn = document.getElementById('btnAiFill');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ AI analyzuje...'; }
+
+  try {
+    const res = await fetch('/.netlify/functions/chat-ai-analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ transcript })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+    const fill = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
+    fill('entryDecisions', data.rozhodnutia);
+    fill('entryTasks',     data.ulohy);
+    fill('entryCritical',  data.kriticke_body);
+
+    _showToast('🤖 AI doplnilo polia');
+  } catch (err) {
+    console.error('[chat] aiAnalyze:', err);
+    _showToast('❌ AI chyba: ' + err.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🤖 AI návrh'; }
+  }
+}
+
 function closeEntryModal() {
   document.getElementById('entryModalOverlay').classList.remove('show');
 }

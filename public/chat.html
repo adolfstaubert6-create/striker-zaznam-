@@ -180,7 +180,16 @@
     <div class="entry-modal-sub" id="entryMsgCount">Prepája 0 správ</div>
 
     <div class="entry-field">
-      <label class="entry-label">Názov *</label>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <label class="entry-label">Názov *</label>
+        <button id="btnAiFill" onclick="aiAnalyzeEntry()"
+                style="background:transparent;border:1px solid rgba(139,92,246,.4);color:#8b5cf6;
+                       font-family:'IBM Plex Mono',monospace;font-size:9px;padding:3px 10px;
+                       border-radius:4px;cursor:pointer;transition:all .15s;letter-spacing:.3px;
+                       white-space:nowrap"
+                onmouseover="this.style.background='rgba(139,92,246,.15)'"
+                onmouseout="this.style.background='transparent'">🤖 AI návrh</button>
+      </div>
       <input class="entry-input" id="entryTitle" type="text"
              placeholder="Napr.: Porada 15.5. – rozhodnutia" />
     </div>
