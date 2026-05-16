@@ -398,10 +398,24 @@ function openCreateEntry() {
   if (!_selectedIds.size) { _showToast('Vyber najprv správy'); return; }
   const sub = document.getElementById('entryMsgCount');
   if (sub) sub.textContent = `Prepája ${_selectedIds.size} správ`;
-  ['entryTitle','entrySummary','entryDecisions','entryTasks','entryCritical'].forEach(id => {
+
+  // Clear manual fields
+  ['entryTitle','entryDecisions','entryTasks','entryCritical'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
+
+  // Auto-fill Zhrnutie with selected messages as chronological transcript
+  const transcript = [..._selectedIds]
+    .map(id => _chatMsgs.find(m => m.id === id))
+    .filter(Boolean)
+    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+    .map(m => `${m.author} (${_fmtTime(m.created_at)}): ${m.text}`)
+    .join('\n');
+
+  const summaryEl = document.getElementById('entrySummary');
+  if (summaryEl) summaryEl.value = transcript;
+
   document.getElementById('entryModalOverlay').classList.add('show');
   setTimeout(() => document.getElementById('entryTitle')?.focus(), 80);
 }
