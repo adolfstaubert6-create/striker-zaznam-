@@ -173,6 +173,8 @@ async function icSend() {
       const e = await res.json().catch(() => ({}));
       throw new Error(e.message || `HTTP ${res.status}`);
     }
+    // Trigger auto-analysis in background after successful send
+    _icAutoAnalyze();
   } catch (err) {
     console.error('[ic] send:', err);
     showToast('❌ Chyba odosielania: ' + err.message);
@@ -181,6 +183,81 @@ async function icSend() {
   } finally {
     btn.disabled = false;
     input.focus();
+  }
+}
+
+// ── AI AUTO-AGENT ─────────────────────────────────────────────────────────────
+let _icLastAnalyze = 0;
+
+async function _icAutoAnalyze() {
+  // Min 90-second cooldown between auto-analyses, need at least 3 messages
+  if (_icMsgs.length < 3) return;
+  if (Date.now() - _icLastAnalyze < 90000) return;
+  _icLastAnalyze = Date.now();
+
+  try {
+    const last10 = _icMsgs.slice(-10);
+    const transcript = last10
+      .map(m => `${m.author} (${_icFmtTime(m.created_at)}): ${m.text}`)
+      .join('\n');
+
+    const res = await fetch('/.netlify/functions/chat-ai-analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ transcript })
+    });
+    if (!res.ok) return;
+
+    const data = await res.json();
+    if (!data.ulohy && !data.rozhodnutia) return;
+
+    // Parse "Staubert: task\nSzabó: task\nObaja: task" into arrays
+    const stTasks = [], szTasks = [];
+    (data.ulohy || '').split('\n').forEach(line => {
+      const l = line.trim();
+      if (!l) return;
+      const stMatch = l.match(/^(Staubert|Adolf)[:\s]+(.+)/i);
+      const szMatch = l.match(/^(Szab[oó]|Tomáš|Tomas)[:\s]+(.+)/i);
+      const bothMatch = l.match(/^Obaja[:\s]+(.+)/i);
+      if (stMatch) stTasks.push(stMatch[2].trim());
+      else if (szMatch) szTasks.push(szMatch[2].trim());
+      else if (bothMatch) { stTasks.push(bothMatch[1].trim()); szTasks.push(bothMatch[1].trim()); }
+    });
+
+    if (!stTasks.length && !szTasks.length && !data.rozhodnutia) return;
+
+    const today = new Date().toISOString().slice(0, 10);
+    const zaznam = {
+      datum: today,
+      co_sa_riesilo: (data.rozhodnutia || 'Auto-analýza chatu').slice(0, 500),
+      vysledok: '',
+      problem: data.kriticke_body || '',
+      ulohy_staubert: stTasks,
+      ulohy_szabo: szTasks,
+      ulohy_splnene: {},
+      dalsi_krok: '',
+      kategoria: 'Iné',
+      tagy: ['chat', 'auto-ai']
+    };
+
+    const tok = await _icToken();
+    const saveRes = await fetch(`${SUPABASE_URL}/rest/v1/zaznam`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${tok}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal'
+      },
+      body: JSON.stringify(zaznam)
+    });
+
+    if (saveRes.ok) {
+      const taskCount = stTasks.length + szTasks.length;
+      if (taskCount > 0) showToast(`🤖 AI extrahoval ${taskCount} úloh z chatu`);
+    }
+  } catch (e) {
+    console.warn('[ic-auto-analyze]', e);
   }
 }
 

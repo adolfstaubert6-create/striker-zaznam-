@@ -592,30 +592,31 @@ initAuth()
 <script>
 if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{});});}
 </script>
-<!-- ── HISTÓRIA HOTOVÝCH ÚLOH – FULLSCREEN MODAL ── -->
-<div id="taskHistoryModal" style="display:none" class="hm-overlay" onclick="if(event.target===this)closeHistoryModal()">
-  <div class="hm-modal">
-    <div class="hm-header">
+</div><!-- /appWrapper -->
+<!-- ── HISTÓRIA HOTOVÝCH ÚLOH – FULLSCREEN MODAL (outside appWrapper) ── -->
+<div id="taskHistoryModal" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(0,0,0,.92);flex-direction:column;align-items:stretch" onclick="if(event.target===this)closeHistoryModal()">
+  <div style="display:flex;flex-direction:column;height:100%;max-width:860px;width:100%;margin:0 auto;padding:0 16px 16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 0 14px;border-bottom:1px solid #242430;flex-shrink:0">
       <div style="display:flex;align-items:baseline;gap:10px">
-        <div class="hm-title" id="hmTitle">História – Staubert</div>
-        <span class="hm-count" id="hmCount"></span>
+        <div id="hmTitle" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#10b981;text-transform:uppercase;letter-spacing:2px">História – Staubert</div>
+        <span id="hmCount" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#555"></span>
       </div>
-      <button class="hm-close" onclick="closeHistoryModal()">✕ Zavrieť</button>
+      <button onclick="closeHistoryModal()" style="background:none;border:1px solid #242430;color:#666;font-family:'IBM Plex Mono',monospace;font-size:11px;padding:5px 12px;border-radius:6px;cursor:pointer">✕ Zavrieť</button>
     </div>
-    <div class="hm-search">
-      <input type="text" id="hmSearch" placeholder="🔍 Hľadať splnené úlohy..." oninput="hmApplyFilters()">
+    <div style="margin:12px 0 8px;flex-shrink:0">
+      <input id="hmSearch" type="text" placeholder="🔍 Hľadať splnené úlohy..." oninput="hmApplyFilters()" style="width:100%;background:#111115;border:1px solid #242430;color:#e8e8e8;font-family:'IBM Plex Sans',sans-serif;font-size:13px;padding:10px 14px;border-radius:8px;outline:none;box-sizing:border-box">
     </div>
-    <div class="hm-filters">
-      <label class="hm-filter">
-        <select id="hmFilterPriority" onchange="hmApplyFilters()">
+    <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;flex-shrink:0">
+      <label style="background:#111115;border:1px solid #242430;color:#666;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:5px 10px;border-radius:5px;cursor:pointer">
+        <select id="hmFilterPriority" onchange="hmApplyFilters()" style="background:none;border:none;color:inherit;font-family:inherit;font-size:inherit;cursor:pointer;outline:none;-webkit-appearance:none">
           <option value="">Priorita</option>
           <option value="Kritická">Kritická</option>
           <option value="Normálna">Normálna</option>
           <option value="Nízka">Nízka</option>
         </select>
       </label>
-      <label class="hm-filter">
-        <select id="hmFilterSource" onchange="hmApplyFilters()">
+      <label style="background:#111115;border:1px solid #242430;color:#666;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:5px 10px;border-radius:5px;cursor:pointer">
+        <select id="hmFilterSource" onchange="hmApplyFilters()" style="background:none;border:none;color:inherit;font-family:inherit;font-size:inherit;cursor:pointer;outline:none;-webkit-appearance:none">
           <option value="">Zdroj</option>
           <option value="AI Chat">AI Chat</option>
           <option value="Manuálne">Manuálne</option>
@@ -623,20 +624,18 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.s
           <option value="Komunikácia">Komunikácia</option>
         </select>
       </label>
-      <label class="hm-filter">
-        <select id="hmFilterDate" onchange="hmApplyFilters()">
+      <label style="background:#111115;border:1px solid #242430;color:#666;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:5px 10px;border-radius:5px;cursor:pointer">
+        <select id="hmFilterDate" onchange="hmApplyFilters()" style="background:none;border:none;color:inherit;font-family:inherit;font-size:inherit;cursor:pointer;outline:none;-webkit-appearance:none">
           <option value="">Dátum</option>
           <option value="today">Dnes</option>
           <option value="week">Tento týždeň</option>
           <option value="month">Tento mesiac</option>
         </select>
       </label>
-      <button class="hm-filter" onclick="hmClearFilters();hmApplyFilters()">✕ Zrušiť filtre</button>
+      <button onclick="hmClearFilters();hmApplyFilters()" style="background:#111115;border:1px solid #242430;color:#666;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:5px 10px;border-radius:5px;cursor:pointer">✕ Zrušiť filtre</button>
     </div>
-    <div class="hm-body" id="hmBody"></div>
+    <div id="hmBody" style="flex:1;overflow-y:auto;padding-right:4px"></div>
   </div>
 </div>
-
-</div><!-- /appWrapper -->
 </body>
 </html>
